@@ -1,0 +1,19 @@
+body {
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 0;
+	margin-bottom: 0;
+
+	padding: 16px;
+
+	max-width: 600px;
+
+	font-family: "Lato", "Helvetica Neue", Helvetica;
+	color: var(--black);
+	background-color: var(--white);
+}
+
+h1, h2 {
+	margin-top: 8px;
+	margin-bottom: 8px;
+}

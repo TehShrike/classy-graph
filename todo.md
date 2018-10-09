@@ -1,0 +1,2 @@
+- parse dates
+- trim past last year's data
