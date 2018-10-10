@@ -1,35 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" height={height}px width={width}px>
 	{#each points as point}
-		<circle cx={calculateX(point.x)}% cy={calculateY(point.y)}% r={pointSize} />
+		<circle cx={calculatePlotX(point.x)}px cy={calculatePlotY(point.y)}px r={pointSize} />
 	{/each}
 </svg>
 
 <script>
-// gotta figure out max/min of each range
-// that lets us calculate 0-100 for every value
-// which is useful if we want to use 0-100px as the basis for scaling
 const max = (maybeNull, number) => maybeNull === null ? number : Math.max(maybeNull, number)
 const min = (maybeNull, number) => maybeNull === null ? number : Math.min(maybeNull, number)
 
 export default {
 	data() {
 		return {
+			leftMargin: 50,
+			bottomMargin: 40,
+			width: 600,
+			height: 200,
 			pointSize: 2,
 			points: [],
 		}
 	},
 	computed: {
-		calculateX: ({ limits, ranges }) => x => ((x - limits.minX) / ranges.x) * 100,
-		calculateY: ({ limits, ranges }) => y => (1 - ((y - limits.minY) / ranges.y)) * 100,
-		limits: ({ points }) => points.reduce(({ minX, maxX, minY, maxY }, { x, y }) => ({
+		plotWidth: ({ width, leftMargin }) => width - leftMargin,
+		plotHeight: ({ height, bottomMargin }) => height - bottomMargin,
+		calculatePlotX: ({ leftMargin, plotWidth, minsAndMaxes, dataRanges }) => x => {
+			const xRatio = ((x - minsAndMaxes.minX) / dataRanges.x)
+
+			return leftMargin + (xRatio * plotWidth)
+		},
+		calculatePlotY: ({ plotHeight, minsAndMaxes, dataRanges }) => y => {
+			const yRatio = ((y - minsAndMaxes.minY) / dataRanges.y)
+
+			return plotHeight - (yRatio * plotHeight)
+		},
+		minsAndMaxes: ({ points }) => points.reduce(({ minX, maxX, minY, maxY }, { x, y }) => ({
 			minX: min(minX, x),
 			maxX: max(maxX, x),
 			minY: min(minY, y),
 			maxY: max(maxY, y),
 		}), { minX: null, maxX: null, minY: null, maxY: null }),
-		ranges: ({ limits }) => ({
-			x: limits.maxX - limits.minX,
-			y: limits.maxY - limits.minY,
+		dataRanges: ({ minsAndMaxes }) => ({
+			x: minsAndMaxes.maxX - minsAndMaxes.minX,
+			y: minsAndMaxes.maxY - minsAndMaxes.minY,
 		}),
 	},
 }
