@@ -1,3 +1,4 @@
+- figure out how to center the labels/text elements at the bottom of the chart
 - make ticks optional on the right or bottom
 - if ticks are not enabled, display a line
 - display the min/max values on the extreme ends of the range frames

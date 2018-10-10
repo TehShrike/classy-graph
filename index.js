@@ -38,7 +38,9 @@ async function main() {
 		data: {
 			points,
 			xLabel: `Date`,
+			formatX: x => new Date(x).toLocaleDateString(),
 			yLabel: `Pounds`,
+			formatY: y => `${ y }lb`,
 		},
 	})
 }
