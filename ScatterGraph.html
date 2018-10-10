@@ -1,6 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" height={height}px width={width}px>
 	{#each points as point}
-		<circle cx={calculatePlotX(point.x)}px cy={calculatePlotY(point.y)}px r={pointSize} />
+		<line
+			x1={leftMargin - 10 - tickLength}px
+			x2={leftMargin - 10}px
+			y1={calculatePlotY(point.y)}px
+			y2={calculatePlotY(point.y)}px
+			stroke=black
+			stroke-width={tickWidth}px
+		/>
+	{/each}
+	{#each points as point}
+		<circle
+			cx={calculatePlotX(point.x)}px
+			cy={calculatePlotY(point.y)}px
+			r={pointSize}
+		/>
 	{/each}
 </svg>
 
@@ -12,25 +26,29 @@ export default {
 	data() {
 		return {
 			leftMargin: 50,
+			rightMargin: 5,
+			topMargin: 5,
 			bottomMargin: 40,
 			width: 600,
 			height: 200,
 			pointSize: 2,
+			tickLength: 10,
+			tickWidth: 0.2,
 			points: [],
 		}
 	},
 	computed: {
-		plotWidth: ({ width, leftMargin }) => width - leftMargin,
-		plotHeight: ({ height, bottomMargin }) => height - bottomMargin,
+		plotWidth: ({ width, leftMargin, rightMargin }) => width - leftMargin - rightMargin,
+		plotHeight: ({ height, bottomMargin, topMargin }) => height - bottomMargin - topMargin,
 		calculatePlotX: ({ leftMargin, plotWidth, minsAndMaxes, dataRanges }) => x => {
 			const xRatio = ((x - minsAndMaxes.minX) / dataRanges.x)
 
 			return leftMargin + (xRatio * plotWidth)
 		},
-		calculatePlotY: ({ plotHeight, minsAndMaxes, dataRanges }) => y => {
+		calculatePlotY: ({ plotHeight, minsAndMaxes, dataRanges, topMargin }) => y => {
 			const yRatio = ((y - minsAndMaxes.minY) / dataRanges.y)
 
-			return plotHeight - (yRatio * plotHeight)
+			return topMargin + plotHeight - (yRatio * plotHeight)
 		},
 		minsAndMaxes: ({ points }) => points.reduce(({ minX, maxX, minY, maxY }, { x, y }) => ({
 			minX: min(minX, x),
