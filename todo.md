@@ -1,2 +1,6 @@
-- parse dates
-- trim past last year's data
+- make ticks optional on the right or bottom
+- if ticks are not enabled, display a line
+- display the min/max values on the extreme ends of the range frames
+- hover over a point and see its value described at left and bottom
+	- custom display functions for values
+- custom colors for points/data lines
