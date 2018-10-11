@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" height={height}px width={width}px>
 	<text
+		fill={fontColor}
+		style="font-size: {fontSize}px;"
 		text-anchor=end
 		x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
 		y={ calculatePlotY(minsAndMaxes.maxY) }
@@ -8,6 +10,8 @@
 		{ formatY(minsAndMaxes.maxY) }
 	</text>
 	<text
+		fill={fontColor}
+		style="font-size: {fontSize}px;"
 		text-anchor=end
 		x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
 		y={ calculatePlotY(minsAndMaxes.minY) }
@@ -16,6 +20,8 @@
 		{ formatY(minsAndMaxes.minY) }
 	</text>
 	<text
+		fill={fontColor}
+		style="font-size: {fontSize}px;"
 		text-anchor=middle
 		x={ calculatePlotX(minsAndMaxes.maxX) }
 		y={ topMargin + plotHeight + plotYMargin + tickLength + labelBuffer}
@@ -24,6 +30,8 @@
 		{ formatX(minsAndMaxes.maxX) }
 	</text>
 	<text
+		fill={fontColor}
+		style="font-size: {fontSize}px;"
 		text-anchor=middle
 		x={ calculatePlotX(minsAndMaxes.minX) }
 		y={ topMargin + plotYMargin + plotHeight + tickLength + labelBuffer}
@@ -33,43 +41,37 @@
 	</text>
 
 
-	{#each points as point}
+	{#each dataset.points as point}
 		<line
 			x1={leftMargin - plotXMargin - tickLength}px
 			x2={leftMargin - plotXMargin}px
 			y1={calculatePlotY(point.y)}px
 			y2={calculatePlotY(point.y)}px
-			stroke=black
+			stroke={dataset.color}
 			stroke-width={tickWidth}px
 		/>
 	{/each}
 
-	{#each points as point}
+	{#each dataset.points as point}
 		<circle
 			cx={calculatePlotX(point.x)}px
 			cy={calculatePlotY(point.y)}px
 			r={pointSize}
+			fill={dataset.color}
 		/>
 	{/each}
 
-	{#each points as point}
+	{#each dataset.points as point}
 		<line
 			x1={calculatePlotX(point.x)}px
 			x2={calculatePlotX(point.x)}px
 			y1={topMargin + plotYMargin + plotHeight}px
 			y2={topMargin + plotYMargin + plotHeight + tickLength}px
-			stroke=black
+			stroke={dataset.color}
 			stroke-width={tickWidth}px
 		/>
 	{/each}
 </svg>
-
-<style>
-text {
-	font-size: 16px;
-}
-
-</style>
 
 <script>
 const max = (maybeNull, number) => maybeNull === null ? number : Math.max(maybeNull, number)
@@ -93,16 +95,19 @@ export default {
 			tickWidth: 0.2,
 			labelBuffer: 4,
 
-			points: [],
+			dataset: {
+				points: [],
+				color: `black`,
+			},
 			formatX: identity,
 			formatY: identity,
 			plotYMargin: 20,
 			plotXMargin: 20,
-			fontSize: 16, // TODO: represent this in the stylesheet
+
+			fontSize: 16,
+			fontColor: `#797979`,
+			highlightColor: `#F01F1F`,
 		}
-	},
-	onstate({ current }) {
-		console.log(current.formatY)
 	},
 	computed: {
 		plotWidth: ({ width, leftMargin, rightMargin }) => width - leftMargin - rightMargin,
@@ -117,7 +122,7 @@ export default {
 
 			return topMargin + plotHeight - (yRatio * plotHeight)
 		},
-		minsAndMaxes: ({ points }) => points.reduce(({ minX, maxX, minY, maxY }, { x, y }) => ({
+		minsAndMaxes: ({ dataset }) => dataset.points.reduce(({ minX, maxX, minY, maxY }, { x, y }) => ({
 			minX: min(minX, x),
 			maxX: max(maxX, x),
 			minY: min(minY, y),

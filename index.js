@@ -3,7 +3,7 @@ import r from 'regex-fun'
 import sheetsy from 'sheetsy'
 const { getSheet } = sheetsy
 
-const key = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`
+const documentId = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`
 const sheet1Id = `ouieeg5`
 
 const digits = /(\d+)/
@@ -22,7 +22,7 @@ const parseStupidDateOrIso = dateString => {
 async function main() {
 	const graphTarget = document.getElementById(`graph-target`)
 
-	const sheet = await getSheet(key, sheet1Id)
+	const sheet = await getSheet(documentId, sheet1Id)
 
 	const points = sheet.rows.map(({ timestamp, weight }) => ({
 		x: parseStupidDateOrIso(timestamp),
@@ -36,7 +36,10 @@ async function main() {
 	new ScatterGraph({
 		target: graphTarget,
 		data: {
-			points,
+			dataset: {
+				points,
+				color: `#139090`,
+			},
 			xLabel: `Date`,
 			formatX: x => new Date(x).toLocaleDateString(),
 			yLabel: `Pounds`,

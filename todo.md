@@ -1,7 +1,9 @@
-- figure out how to center the labels/text elements at the bottom of the chart
-- make ticks optional on the right or bottom
+- make ticks optional on the right or bottom?
 - if ticks are not enabled, display a line
-- display the min/max values on the extreme ends of the range frames
 - hover over a point and see its value described at left and bottom
 	- custom display functions for values
-- custom colors for points/data lines
+- make the default tick size larger and set opacities on ticks and data points
+- another example graph
+	- strength of USD/GBP/EUR over time
+	- will need to handle multiple datasets
+	- big mac index data: https://github.com/TheEconomist/big-mac-data
