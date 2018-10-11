@@ -69,6 +69,7 @@
 			cy={calculatePlotY(point.y)}px
 			r={pointSize}
 			fill={dataset.color}
+			on:mouseenter=hover(point)
 		/>
 	{/each}
 
@@ -93,6 +94,36 @@
 			stroke-width=1px
 		/>
 	{/if}
+
+	{#if hoveredPoint}
+		<circle
+			cx={calculatePlotX(hoveredPoint.x)}px
+			cy={calculatePlotY(hoveredPoint.y)}px
+			r={pointSize * 2}
+			fill={highlightColor}
+			on:mouseleave=hover(null)
+		/>
+
+		<line
+			x1={leftMargin - plotXMargin - tickLength}px
+			x2={leftMargin - plotXMargin}px
+			y1={calculatePlotY(hoveredPoint.y)}px
+			y2={calculatePlotY(hoveredPoint.y)}px
+			stroke={highlightColor}
+			stroke-width={tickWidth * 10}px
+		/>
+
+		<line
+			x1={calculatePlotX(hoveredPoint.x)}px
+			x2={calculatePlotX(hoveredPoint.x)}px
+			y1={topMargin + plotYMargin + plotHeight}px
+			y2={topMargin + plotYMargin + plotHeight + tickLength}px
+			stroke={highlightColor}
+			stroke-width={tickWidth * 10}px
+		/>
+
+	{/if}
+
 </svg>
 
 <script>
@@ -130,8 +161,15 @@ export default {
 
 			fontSize: 16,
 			baseColor: `#797979`,
-			highlightColor: `#F01F1F`,
+			highlightColor: `#9A0000`,
 		}
+	},
+	methods: {
+		hover(hoveredPoint) {
+			this.set({
+				hoveredPoint,
+			})
+		},
 	},
 	computed: {
 		plotWidth: ({ width, leftMargin, rightMargin }) => width - leftMargin - rightMargin,
