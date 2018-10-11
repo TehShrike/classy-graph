@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" height={height}px width={width}px>
 	<text
-		fill={fontColor}
+		fill={baseColor}
 		style="font-size: {fontSize}px;"
 		text-anchor=end
 		x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
@@ -10,7 +10,7 @@
 		{ formatY(minsAndMaxes.maxY) }
 	</text>
 	<text
-		fill={fontColor}
+		fill={baseColor}
 		style="font-size: {fontSize}px;"
 		text-anchor=end
 		x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
@@ -20,7 +20,7 @@
 		{ formatY(minsAndMaxes.minY) }
 	</text>
 	<text
-		fill={fontColor}
+		fill={baseColor}
 		style="font-size: {fontSize}px;"
 		text-anchor=middle
 		x={ calculatePlotX(minsAndMaxes.maxX) }
@@ -30,7 +30,7 @@
 		{ formatX(minsAndMaxes.maxX) }
 	</text>
 	<text
-		fill={fontColor}
+		fill={baseColor}
 		style="font-size: {fontSize}px;"
 		text-anchor=middle
 		x={ calculatePlotX(minsAndMaxes.minX) }
@@ -41,16 +41,27 @@
 	</text>
 
 
-	{#each dataset.points as point}
+	{#if leftFrame === 'ticks'}
+		{#each dataset.points as point}
+			<line
+				x1={leftMargin - plotXMargin - tickLength}px
+				x2={leftMargin - plotXMargin}px
+				y1={calculatePlotY(point.y)}px
+				y2={calculatePlotY(point.y)}px
+				stroke={dataset.color}
+				stroke-width={tickWidth}px
+			/>
+		{/each}
+	{:elseif leftFrame === 'line'}
 		<line
-			x1={leftMargin - plotXMargin - tickLength}px
+			x1={leftMargin - plotXMargin}px
 			x2={leftMargin - plotXMargin}px
-			y1={calculatePlotY(point.y)}px
-			y2={calculatePlotY(point.y)}px
-			stroke={dataset.color}
-			stroke-width={tickWidth}px
+			y1={calculatePlotY(minsAndMaxes.minY)}px
+			y2={calculatePlotY(minsAndMaxes.maxY)}px
+			stroke={baseColor}
+			stroke-width=1px
 		/>
-	{/each}
+	{/if}
 
 	{#each dataset.points as point}
 		<circle
@@ -61,16 +72,27 @@
 		/>
 	{/each}
 
-	{#each dataset.points as point}
+	{#if bottomFrame === 'ticks'}
+		{#each dataset.points as point}
+			<line
+				x1={calculatePlotX(point.x)}px
+				x2={calculatePlotX(point.x)}px
+				y1={topMargin + plotYMargin + plotHeight}px
+				y2={topMargin + plotYMargin + plotHeight + tickLength}px
+				stroke={dataset.color}
+				stroke-width={tickWidth}px
+			/>
+		{/each}
+	{:elseif bottomFrame === 'line'}
 		<line
-			x1={calculatePlotX(point.x)}px
-			x2={calculatePlotX(point.x)}px
+			x1={calculatePlotX(minsAndMaxes.minX)}px
+			x2={calculatePlotX(minsAndMaxes.maxX)}px
 			y1={topMargin + plotYMargin + plotHeight}px
-			y2={topMargin + plotYMargin + plotHeight + tickLength}px
-			stroke={dataset.color}
-			stroke-width={tickWidth}px
+			y2={topMargin + plotYMargin + plotHeight}px
+			stroke={baseColor}
+			stroke-width=1px
 		/>
-	{/each}
+	{/if}
 </svg>
 
 <script>
@@ -90,6 +112,8 @@ export default {
 			width: 600,
 			height: 300,
 
+			bottomFrame: `ticks`,
+			leftFrame: `ticks`,
 			pointSize: 2,
 			tickLength: 10,
 			tickWidth: 0.2,
@@ -105,7 +129,7 @@ export default {
 			plotXMargin: 20,
 
 			fontSize: 16,
-			fontColor: `#797979`,
+			baseColor: `#797979`,
 			highlightColor: `#F01F1F`,
 		}
 	},

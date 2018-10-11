@@ -29,8 +29,6 @@ async function main() {
 		y: parseFloat(weight),
 	}))
 
-	console.log(points)
-
 	graphTarget.innerText = ``
 
 	new ScatterGraph({
@@ -40,6 +38,8 @@ async function main() {
 				points,
 				color: `#139090`,
 			},
+			bottomFrame: `ticks`,
+			leftFrame: `ticks`,
 			xLabel: `Date`,
 			formatX: x => new Date(x).toLocaleDateString(),
 			yLabel: `Pounds`,

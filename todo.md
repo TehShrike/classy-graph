@@ -1,9 +1,10 @@
 - make ticks optional on the right or bottom?
-- if ticks are not enabled, display a line
 - hover over a point and see its value described at left and bottom
 	- custom display functions for values
-- make the default tick size larger and set opacities on ticks and data points
+- set opacities on ticks and data points
+	- make the default tick size larger
 - another example graph
 	- strength of USD/GBP/EUR over time
 	- will need to handle multiple datasets
 	- big mac index data: https://github.com/TheEconomist/big-mac-data
+- use groups to apply strokes and fills to data points and ticks
