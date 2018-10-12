@@ -95,13 +95,14 @@
 		/>
 	{/if}
 
-	{#if hoveredPoint}
+	{#each hoveredPoints as hoveredPoint (hoveredPoint.x)}
 		<circle
 			cx={calculatePlotX(hoveredPoint.x)}px
 			cy={calculatePlotY(hoveredPoint.y)}px
 			r={pointSize * 2}
 			fill={highlightColor}
 			on:mouseleave=hover(null)
+			transition:fade="{duration: 100}"
 		/>
 
 		<line
@@ -111,6 +112,7 @@
 			y2={calculatePlotY(hoveredPoint.y)}px
 			stroke={highlightColor}
 			stroke-width={tickWidth * 10}px
+			transition:fade="{duration: 200}"
 		/>
 
 		<line
@@ -120,13 +122,17 @@
 			y2={topMargin + plotYMargin + plotHeight + tickLength}px
 			stroke={highlightColor}
 			stroke-width={tickWidth * 10}px
+			transition:fade="{duration: 200}"
 		/>
 
-	{/if}
+	{/each}
 
 </svg>
 
 <script>
+import fade from 'svelte-transitions-fade'
+
+
 const max = (maybeNull, number) => maybeNull === null ? number : Math.max(maybeNull, number)
 const min = (maybeNull, number) => maybeNull === null ? number : Math.min(maybeNull, number)
 
@@ -162,14 +168,23 @@ export default {
 			fontSize: 16,
 			baseColor: `#797979`,
 			highlightColor: `#9A0000`,
+
+			hoveredPoints: [],
 		}
 	},
 	methods: {
 		hover(hoveredPoint) {
+			const hoveredPoints = hoveredPoint
+				? [ hoveredPoint ]
+				: []
+
 			this.set({
-				hoveredPoint,
+				hoveredPoints,
 			})
 		},
+	},
+	transitions: {
+		fade,
 	},
 	computed: {
 		plotWidth: ({ width, leftMargin, rightMargin }) => width - leftMargin - rightMargin,

@@ -23,6 +23,7 @@
     "rollup-plugin-node-resolve": "3.4.0",
     "rollup-plugin-svelte": "4.3.2",
     "sheetsy": "2.1.3",
-    "svelte": "2.13.5"
+    "svelte": "2.13.5",
+    "svelte-transitions": "1.2.0"
   }
 }
