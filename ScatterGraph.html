@@ -1,44 +1,60 @@
 <svg xmlns="http://www.w3.org/2000/svg" height={height}px width={width}px>
-	<text
-		fill={baseColor}
-		style="font-size: {fontSize}px;"
-		text-anchor=end
-		x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
-		y={ calculatePlotY(minsAndMaxes.maxY) }
-		dy=4
-	>
-		{ formatY(minsAndMaxes.maxY) }
-	</text>
-	<text
-		fill={baseColor}
-		style="font-size: {fontSize}px;"
-		text-anchor=end
-		x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
-		y={ calculatePlotY(minsAndMaxes.minY) }
-		dy=4
-	>
-		{ formatY(minsAndMaxes.minY) }
-	</text>
-	<text
-		fill={baseColor}
-		style="font-size: {fontSize}px;"
-		text-anchor=middle
-		x={ calculatePlotX(minsAndMaxes.maxX) }
-		y={ topMargin + plotHeight + plotYMargin + tickLength + labelBuffer}
-		dy={fontSize}
-	>
-		{ formatX(minsAndMaxes.maxX) }
-	</text>
-	<text
-		fill={baseColor}
-		style="font-size: {fontSize}px;"
-		text-anchor=middle
-		x={ calculatePlotX(minsAndMaxes.minX) }
-		y={ topMargin + plotYMargin + plotHeight + tickLength + labelBuffer}
-		dy={fontSize}
-	>
-		{ formatX(minsAndMaxes.minX) }
-	</text>
+	{#if !hoverOverlaps.maxYLabel}
+		<text
+			fill={baseColor}
+			style="font-size: {fontSize}px;"
+			text-anchor=end
+			x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
+			y={ calculatePlotY(minsAndMaxes.maxY) }
+			dy=4
+			transition:fade="{duration: 200}"
+			ref:maxYLabel
+		>
+			{ formatY(minsAndMaxes.maxY) }
+		</text>
+	{/if}
+	{#if !hoverOverlaps.minYLabel}
+		<text
+			fill={baseColor}
+			style="font-size: {fontSize}px;"
+			text-anchor=end
+			x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
+			y={ calculatePlotY(minsAndMaxes.minY) }
+			dy=4
+			transition:fade="{duration: 200}"
+			ref:minYLabel
+		>
+			{ formatY(minsAndMaxes.minY) }
+		</text>
+	{/if}
+	{#if !hoverOverlaps.maxXLabel}
+		<text
+			fill={baseColor}
+			style="font-size: {fontSize}px;"
+			text-anchor=middle
+			x={ calculatePlotX(minsAndMaxes.maxX) }
+			y={ topMargin + plotHeight + plotYMargin + tickLength + labelBuffer}
+			dy={fontSize}
+			transition:fade="{duration: 200}"
+			ref:maxXLabel
+		>
+			{ formatX(minsAndMaxes.maxX) }
+		</text>
+	{/if}
+	{#if !hoverOverlaps.minXLabel}
+		<text
+			fill={baseColor}
+			style="font-size: {fontSize}px;"
+			text-anchor=middle
+			x={ calculatePlotX(minsAndMaxes.minX) }
+			y={ topMargin + plotYMargin + plotHeight + tickLength + labelBuffer}
+			dy={fontSize}
+			transition:fade="{duration: 200}"
+			ref:minXLabel
+		>
+			{ formatX(minsAndMaxes.minX) }
+		</text>
+	{/if}
 
 
 	{#if leftFrame === 'ticks'}
@@ -95,11 +111,11 @@
 		/>
 	{/if}
 
-	{#each hoveredPoints as hoveredPoint (hoveredPoint.x)}
+	{#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
 		<circle
 			cx={calculatePlotX(hoveredPoint.x)}px
 			cy={calculatePlotY(hoveredPoint.y)}px
-			r={pointSize * 2}
+			r={pointSize * 3}
 			fill={highlightColor}
 			on:mouseleave=hover(null)
 			transition:fade="{duration: 100}"
@@ -125,6 +141,28 @@
 			transition:fade="{duration: 200}"
 		/>
 
+		<text
+			fill={highlightColor}
+			style="font-size: {fontSize}px;"
+			text-anchor=end
+			x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
+			y={ calculatePlotY(hoveredPoint.y) }
+			dy=4
+			transition:fade="{duration: 200}"
+		>
+			{ formatY(hoveredPoint.y) }
+		</text>
+		<text
+			fill={highlightColor}
+			style="font-size: {fontSize}px;"
+			text-anchor=middle
+			x={ calculatePlotX(hoveredPoint.x) }
+			y={ topMargin + plotHeight + plotYMargin + tickLength + labelBuffer}
+			dy={fontSize}
+			transition:fade="{duration: 200}"
+		>
+			{ formatX(hoveredPoint.x) }
+		</text>
 	{/each}
 
 </svg>
@@ -170,16 +208,48 @@ export default {
 			highlightColor: `#9A0000`,
 
 			hoveredPoints: [],
+			hoverOverlaps: {},
 		}
 	},
 	methods: {
 		hover(hoveredPoint) {
-			const hoveredPoints = hoveredPoint
-				? [ hoveredPoint ]
-				: []
+			const { calculatePlotX, calculatePlotY } = this.get()
+
+			const hoverOverlaps = {}
+
+			if (hoveredPoint) {
+				const pointYPosition = calculatePlotY(hoveredPoint.y)
+
+				if (this.refs.maxYLabel) {
+					const maxYLabelBox = this.refs.maxYLabel.getBBox()
+
+					hoverOverlaps.maxYLabel = (maxYLabelBox.y + (maxYLabelBox.height * 1.5)) >= pointYPosition
+				}
+
+				if (this.refs.minYLabel) {
+					const minYLabelBox = this.refs.minYLabel.getBBox()
+
+					hoverOverlaps.minYLabel = (minYLabelBox.y - (minYLabelBox.height * 0.5)) <= pointYPosition
+				}
+
+				const pointXPosition = calculatePlotX(hoveredPoint.x)
+
+				if (this.refs.maxXLabel) {
+					const maxXLabelBox = this.refs.maxXLabel.getBBox()
+
+					hoverOverlaps.maxXLabel = (maxXLabelBox.x - (maxXLabelBox.width * 0.5)) <= pointXPosition
+				}
+
+				if (this.refs.minXLabel) {
+					const minXLabelBox = this.refs.minXLabel.getBBox()
+
+					hoverOverlaps.minXLabel = (minXLabelBox.x + (minXLabelBox.width * 1.5)) >= pointXPosition
+				}
+			}
 
 			this.set({
-				hoveredPoints,
+				hoveredPoints: hoveredPoint ? [ hoveredPoint ] : [],
+				hoverOverlaps,
 			})
 		},
 	},

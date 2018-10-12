@@ -1,6 +1,6 @@
 - make ticks optional on the right or bottom?
-- hover over a point and see its value described at left and bottom
-	- custom display functions for values
+- display the axis labels
+- data points should be considered hovered as soon as the cursor is within the hover size radius, not the data point radius
 - set opacities on ticks and data points
 	- make the default tick size larger
 - another example graph
@@ -8,3 +8,4 @@
 	- will need to handle multiple datasets
 	- big mac index data: https://github.com/TheEconomist/big-mac-data
 - use groups to apply strokes and fills to data points and ticks
+- explain the principles from the chapter
