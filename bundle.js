@@ -1,0 +1,2425 @@
+(function () {
+	'use strict';
+
+	function noop() {}
+
+	function assign(tar, src) {
+		for (var k in src) tar[k] = src[k];
+		return tar;
+	}
+
+	function callAfter(fn, i) {
+		if (i === 0) fn();
+		return () => {
+			if (!--i) fn();
+		};
+	}
+
+	function run(fn) {
+		fn();
+	}
+
+	function append(target, node) {
+		target.appendChild(node);
+	}
+
+	function insert(target, node, anchor) {
+		target.insertBefore(node, anchor);
+	}
+
+	function detachNode(node) {
+		node.parentNode.removeChild(node);
+	}
+
+	function destroyEach(iterations, detach) {
+		for (var i = 0; i < iterations.length; i += 1) {
+			if (iterations[i]) iterations[i].d(detach);
+		}
+	}
+
+	function createElement(name) {
+		return document.createElement(name);
+	}
+
+	function createSvgElement(name) {
+		return document.createElementNS('http://www.w3.org/2000/svg', name);
+	}
+
+	function createText(data) {
+		return document.createTextNode(data);
+	}
+
+	function createComment() {
+		return document.createComment('');
+	}
+
+	function addListener(node, event, handler) {
+		node.addEventListener(event, handler, false);
+	}
+
+	function removeListener(node, event, handler) {
+		node.removeEventListener(event, handler, false);
+	}
+
+	function setAttribute(node, attribute, value) {
+		node.setAttribute(attribute, value);
+	}
+
+	function setData(text, data) {
+		text.data = '' + data;
+	}
+
+	function setStyle(node, key, value) {
+		node.style.setProperty(key, value);
+	}
+
+	function linear(t) {
+		return t;
+	}
+
+	function generateRule({ a, b, delta, duration }, ease, fn) {
+		const step = 16.666 / duration;
+		let keyframes = '{\n';
+
+		for (let p = 0; p <= 1; p += step) {
+			const t = a + delta * ease(p);
+			keyframes += p * 100 + `%{${fn(t, 1 - t)}}\n`;
+		}
+
+		return keyframes + `100% {${fn(b, 1 - b)}}\n}`;
+	}
+
+	// https://github.com/darkskyapp/string-hash/blob/master/index.js
+	function hash(str) {
+		let hash = 5381;
+		let i = str.length;
+
+		while (i--) hash = ((hash << 5) - hash) ^ str.charCodeAt(i);
+		return hash >>> 0;
+	}
+
+	function wrapTransition(component, node, fn, params, intro) {
+		let obj = fn.call(component, node, params);
+		let duration;
+		let ease;
+		let cssText;
+
+		let initialised = false;
+
+		return {
+			t: intro ? 0 : 1,
+			running: false,
+			program: null,
+			pending: null,
+
+			run(b, callback) {
+				if (typeof obj === 'function') {
+					transitionManager.wait().then(() => {
+						obj = obj();
+						this._run(b, callback);
+					});
+				} else {
+					this._run(b, callback);
+				}
+			},
+
+			_run(b, callback) {
+				duration = obj.duration || 300;
+				ease = obj.easing || linear;
+
+				const program = {
+					start: window.performance.now() + (obj.delay || 0),
+					b,
+					callback: callback || noop
+				};
+
+				if (intro && !initialised) {
+					if (obj.css && obj.delay) {
+						cssText = node.style.cssText;
+						node.style.cssText += obj.css(0, 1);
+					}
+
+					if (obj.tick) obj.tick(0, 1);
+					initialised = true;
+				}
+
+				if (!b) {
+					program.group = outros.current;
+					outros.current.remaining += 1;
+				}
+
+				if (obj.delay) {
+					this.pending = program;
+				} else {
+					this.start(program);
+				}
+
+				if (!this.running) {
+					this.running = true;
+					transitionManager.add(this);
+				}
+			},
+
+			start(program) {
+				component.fire(`${program.b ? 'intro' : 'outro'}.start`, { node });
+
+				program.a = this.t;
+				program.delta = program.b - program.a;
+				program.duration = duration * Math.abs(program.b - program.a);
+				program.end = program.start + program.duration;
+
+				if (obj.css) {
+					if (obj.delay) node.style.cssText = cssText;
+
+					const rule = generateRule(program, ease, obj.css);
+					transitionManager.addRule(rule, program.name = '__svelte_' + hash(rule));
+
+					node.style.animation = (node.style.animation || '')
+						.split(', ')
+						.filter(anim => anim && (program.delta < 0 || !/__svelte/.test(anim)))
+						.concat(`${program.name} ${program.duration}ms linear 1 forwards`)
+						.join(', ');
+				}
+
+				this.program = program;
+				this.pending = null;
+			},
+
+			update(now) {
+				const program = this.program;
+				if (!program) return;
+
+				const p = now - program.start;
+				this.t = program.a + program.delta * ease(p / program.duration);
+				if (obj.tick) obj.tick(this.t, 1 - this.t);
+			},
+
+			done() {
+				const program = this.program;
+				this.t = program.b;
+
+				if (obj.tick) obj.tick(this.t, 1 - this.t);
+
+				component.fire(`${program.b ? 'intro' : 'outro'}.end`, { node });
+
+				if (!program.b && !program.invalidated) {
+					program.group.callbacks.push(() => {
+						program.callback();
+						if (obj.css) transitionManager.deleteRule(node, program.name);
+					});
+
+					if (--program.group.remaining === 0) {
+						program.group.callbacks.forEach(run);
+					}
+				} else {
+					if (obj.css) transitionManager.deleteRule(node, program.name);
+				}
+
+				this.running = !!this.pending;
+			},
+
+			abort(reset) {
+				if (this.program) {
+					if (reset && obj.tick) obj.tick(1, 0);
+					if (obj.css) transitionManager.deleteRule(node, this.program.name);
+					this.program = this.pending = null;
+					this.running = false;
+				}
+			},
+
+			invalidate() {
+				if (this.program) {
+					this.program.invalidated = true;
+				}
+			}
+		};
+	}
+
+	let outros = {};
+
+	function groupOutros() {
+		outros.current = {
+			remaining: 0,
+			callbacks: []
+		};
+	}
+
+	var transitionManager = {
+		running: false,
+		transitions: [],
+		bound: null,
+		stylesheet: null,
+		activeRules: {},
+		promise: null,
+
+		add(transition) {
+			this.transitions.push(transition);
+
+			if (!this.running) {
+				this.running = true;
+				requestAnimationFrame(this.bound || (this.bound = this.next.bind(this)));
+			}
+		},
+
+		addRule(rule, name) {
+			if (!this.stylesheet) {
+				const style = createElement('style');
+				document.head.appendChild(style);
+				transitionManager.stylesheet = style.sheet;
+			}
+
+			if (!this.activeRules[name]) {
+				this.activeRules[name] = true;
+				this.stylesheet.insertRule(`@keyframes ${name} ${rule}`, this.stylesheet.cssRules.length);
+			}
+		},
+
+		next() {
+			this.running = false;
+
+			const now = window.performance.now();
+			let i = this.transitions.length;
+
+			while (i--) {
+				const transition = this.transitions[i];
+
+				if (transition.program && now >= transition.program.end) {
+					transition.done();
+				}
+
+				if (transition.pending && now >= transition.pending.start) {
+					transition.start(transition.pending);
+				}
+
+				if (transition.running) {
+					transition.update(now);
+					this.running = true;
+				} else if (!transition.pending) {
+					this.transitions.splice(i, 1);
+				}
+			}
+
+			if (this.running) {
+				requestAnimationFrame(this.bound);
+			} else if (this.stylesheet) {
+				let i = this.stylesheet.cssRules.length;
+				while (i--) this.stylesheet.deleteRule(i);
+				this.activeRules = {};
+			}
+		},
+
+		deleteRule(node, name) {
+			node.style.animation = node.style.animation
+				.split(', ')
+				.filter(anim => anim && anim.indexOf(name) === -1)
+				.join(', ');
+		},
+
+		wait() {
+			if (!transitionManager.promise) {
+				transitionManager.promise = Promise.resolve();
+				transitionManager.promise.then(() => {
+					transitionManager.promise = null;
+				});
+			}
+
+			return transitionManager.promise;
+		}
+	};
+
+	function destroyBlock(block, lookup) {
+		block.d(1);
+		lookup[block.key] = null;
+	}
+
+	function outroAndDestroyBlock(block, lookup) {
+		block.o(function() {
+			destroyBlock(block, lookup);
+		});
+	}
+
+	function updateKeyedEach(old_blocks, component, changed, get_key, dynamic, ctx, list, lookup, node, destroy, create_each_block, intro_method, next, get_context) {
+		var o = old_blocks.length;
+		var n = list.length;
+
+		var i = o;
+		var old_indexes = {};
+		while (i--) old_indexes[old_blocks[i].key] = i;
+
+		var new_blocks = [];
+		var new_lookup = {};
+		var deltas = {};
+
+		var i = n;
+		while (i--) {
+			var child_ctx = get_context(ctx, list, i);
+			var key = get_key(child_ctx);
+			var block = lookup[key];
+
+			if (!block) {
+				block = create_each_block(component, key, child_ctx);
+				block.c();
+			} else if (dynamic) {
+				block.p(changed, child_ctx);
+			}
+
+			new_blocks[i] = new_lookup[key] = block;
+
+			if (key in old_indexes) deltas[key] = Math.abs(i - old_indexes[key]);
+		}
+
+		var will_move = {};
+		var did_move = {};
+
+		function insert(block) {
+			block[intro_method](node, next);
+			lookup[block.key] = block;
+			next = block.first;
+			n--;
+		}
+
+		while (o && n) {
+			var new_block = new_blocks[n - 1];
+			var old_block = old_blocks[o - 1];
+			var new_key = new_block.key;
+			var old_key = old_block.key;
+
+			if (new_block === old_block) {
+				// do nothing
+				next = new_block.first;
+				o--;
+				n--;
+			}
+
+			else if (!new_lookup[old_key]) {
+				// remove old block
+				destroy(old_block, lookup);
+				o--;
+			}
+
+			else if (!lookup[new_key] || will_move[new_key]) {
+				insert(new_block);
+			}
+
+			else if (did_move[old_key]) {
+				o--;
+
+			} else if (deltas[new_key] > deltas[old_key]) {
+				did_move[new_key] = true;
+				insert(new_block);
+
+			} else {
+				will_move[old_key] = true;
+				o--;
+			}
+		}
+
+		while (o--) {
+			var old_block = old_blocks[o];
+			if (!new_lookup[old_block.key]) destroy(old_block, lookup);
+		}
+
+		while (n) insert(new_blocks[n - 1]);
+
+		return new_blocks;
+	}
+
+	function blankObject() {
+		return Object.create(null);
+	}
+
+	function destroy(detach) {
+		this.destroy = noop;
+		this.fire('destroy');
+		this.set = noop;
+
+		this._fragment.d(detach !== false);
+		this._fragment = null;
+		this._state = {};
+	}
+
+	function _differs(a, b) {
+		return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
+	}
+
+	function fire(eventName, data) {
+		var handlers =
+			eventName in this._handlers && this._handlers[eventName].slice();
+		if (!handlers) return;
+
+		for (var i = 0; i < handlers.length; i += 1) {
+			var handler = handlers[i];
+
+			if (!handler.__calling) {
+				try {
+					handler.__calling = true;
+					handler.call(this, data);
+				} finally {
+					handler.__calling = false;
+				}
+			}
+		}
+	}
+
+	function flush(component) {
+		component._lock = true;
+		callAll(component._beforecreate);
+		callAll(component._oncreate);
+		callAll(component._aftercreate);
+		component._lock = false;
+	}
+
+	function get() {
+		return this._state;
+	}
+
+	function init(component, options) {
+		component._handlers = blankObject();
+		component._slots = blankObject();
+		component._bind = options._bind;
+		component._staged = {};
+
+		component.options = options;
+		component.root = options.root || component;
+		component.store = options.store || component.root.store;
+
+		if (!options.root) {
+			component._beforecreate = [];
+			component._oncreate = [];
+			component._aftercreate = [];
+		}
+	}
+
+	function on(eventName, handler) {
+		var handlers = this._handlers[eventName] || (this._handlers[eventName] = []);
+		handlers.push(handler);
+
+		return {
+			cancel: function() {
+				var index = handlers.indexOf(handler);
+				if (~index) handlers.splice(index, 1);
+			}
+		};
+	}
+
+	function set(newState) {
+		this._set(assign({}, newState));
+		if (this.root._lock) return;
+		flush(this.root);
+	}
+
+	function _set(newState) {
+		var oldState = this._state,
+			changed = {},
+			dirty = false;
+
+		newState = assign(this._staged, newState);
+		this._staged = {};
+
+		for (var key in newState) {
+			if (this._differs(newState[key], oldState[key])) changed[key] = dirty = true;
+		}
+		if (!dirty) return;
+
+		this._state = assign(assign({}, oldState), newState);
+		this._recompute(changed, this._state);
+		if (this._bind) this._bind(changed, this._state);
+
+		if (this._fragment) {
+			this.fire("state", { changed: changed, current: this._state, previous: oldState });
+			this._fragment.p(changed, this._state);
+			this.fire("update", { changed: changed, current: this._state, previous: oldState });
+		}
+	}
+
+	function _stage(newState) {
+		assign(this._staged, newState);
+	}
+
+	function callAll(fns) {
+		while (fns && fns.length) fns.shift()();
+	}
+
+	function _mount(target, anchor) {
+		this._fragment[this._fragment.i ? 'i' : 'm'](target, anchor || null);
+	}
+
+	var proto = {
+		destroy,
+		get,
+		fire,
+		on,
+		set,
+		_recompute: noop,
+		_set,
+		_stage,
+		_mount,
+		_differs
+	};
+
+	function fade ( node, ref ) {
+		var delay = ref.delay; if ( delay === void 0 ) delay = 0;
+		var duration = ref.duration; if ( duration === void 0 ) duration = 400;
+
+		var o = +getComputedStyle( node ).opacity;
+
+		return {
+			delay: delay,
+			duration: duration,
+			css: function (t) { return ("opacity: " + (t * o)); }
+		};
+	}
+
+	/* ScatterGraph.html generated by Svelte v2.13.5 */
+
+	const max = (maybeNull, number) => maybeNull === null ? number : Math.max(maybeNull, number);
+	const min = (maybeNull, number) => maybeNull === null ? number : Math.min(maybeNull, number);
+
+	const identity = value => value;
+
+	function plotWidth({ width, leftMargin, rightMargin }) {
+		return width - leftMargin - rightMargin;
+	}
+
+	function plotHeight({ height, bottomMargin, topMargin }) {
+		return height - bottomMargin - topMargin;
+	}
+
+	function calculatePlotX({ leftMargin, plotWidth, minsAndMaxes, dataRanges }) {
+		return x => {
+		const xRatio = ((x - minsAndMaxes.minX) / dataRanges.x);
+
+		return leftMargin + (xRatio * plotWidth)
+	};
+	}
+
+	function calculatePlotY({ plotHeight, minsAndMaxes, dataRanges, topMargin }) {
+		return y => {
+		const yRatio = ((y - minsAndMaxes.minY) / dataRanges.y);
+
+		return topMargin + plotHeight - (yRatio * plotHeight)
+	};
+	}
+
+	function minsAndMaxes({ dataset }) {
+		return dataset.points.reduce(({ minX, maxX, minY, maxY }, { x, y }) => ({
+		minX: min(minX, x),
+		maxX: max(maxX, x),
+		minY: min(minY, y),
+		maxY: max(maxY, y),
+	}), { minX: null, maxX: null, minY: null, maxY: null });
+	}
+
+	function dataRanges({ minsAndMaxes }) {
+		return {
+		x: minsAndMaxes.maxX - minsAndMaxes.minX,
+		y: minsAndMaxes.maxY - minsAndMaxes.minY,
+	};
+	}
+
+	function data() {
+		return {
+			leftMargin: 100,
+			rightMargin: 50,
+			topMargin: 40,
+			bottomMargin: 80,
+
+			width: 600,
+			height: 300,
+
+			bottomFrame: `ticks`,
+			leftFrame: `ticks`,
+			pointSize: 2,
+			tickLength: 10,
+			tickWidth: 0.2,
+			labelBuffer: 4,
+
+			dataset: {
+				points: [],
+				color: `black`,
+			},
+			formatX: identity,
+			formatY: identity,
+			plotYMargin: 20,
+			plotXMargin: 20,
+
+			fontSize: 16,
+			baseColor: `#797979`,
+			highlightColor: `#9A0000`,
+
+			hoveredPoints: [],
+			hoverOverlaps: {},
+		}
+	}
+	var methods = {
+		hover(hoveredPoint) {
+			const { calculatePlotX, calculatePlotY } = this.get();
+
+			const hoverOverlaps = {};
+
+			if (hoveredPoint) {
+				const pointYPosition = calculatePlotY(hoveredPoint.y);
+
+				if (this.refs.maxYLabel) {
+					const maxYLabelBox = this.refs.maxYLabel.getBBox();
+
+					hoverOverlaps.maxYLabel = (maxYLabelBox.y + (maxYLabelBox.height * 1.5)) >= pointYPosition;
+				}
+
+				if (this.refs.minYLabel) {
+					const minYLabelBox = this.refs.minYLabel.getBBox();
+
+					hoverOverlaps.minYLabel = (minYLabelBox.y - (minYLabelBox.height * 0.5)) <= pointYPosition;
+				}
+
+				const pointXPosition = calculatePlotX(hoveredPoint.x);
+
+				if (this.refs.maxXLabel) {
+					const maxXLabelBox = this.refs.maxXLabel.getBBox();
+
+					hoverOverlaps.maxXLabel = (maxXLabelBox.x - (maxXLabelBox.width * 0.5)) <= pointXPosition;
+				}
+
+				if (this.refs.minXLabel) {
+					const minXLabelBox = this.refs.minXLabel.getBBox();
+
+					hoverOverlaps.minXLabel = (minXLabelBox.x + (minXLabelBox.width * 1.5)) >= pointXPosition;
+				}
+			}
+
+			this.set({
+				hoveredPoints: hoveredPoint ? [ hoveredPoint ] : [],
+				hoverOverlaps,
+			});
+		},
+	};
+
+	function create_main_fragment(component, ctx) {
+		var svg, if_block_anchor, if_block_1_anchor, if_block_2_anchor, if_block_3_anchor, if_block_4_anchor, each_anchor, if_block_6_anchor, each_1_blocks_1 = [], each_1_lookup = blankObject(), svg_height_value, svg_width_value, current;
+
+		var if_block = (!ctx.hoverOverlaps.maxYLabel) && create_if_block(component, ctx);
+
+		var if_block_1 = (!ctx.hoverOverlaps.minYLabel) && create_if_block_1(component, ctx);
+
+		var if_block_2 = (!ctx.hoverOverlaps.maxXLabel) && create_if_block_2(component, ctx);
+
+		var if_block_3 = (!ctx.hoverOverlaps.minXLabel) && create_if_block_3(component, ctx);
+
+		function select_block_type(ctx) {
+			if (ctx.leftFrame === 'ticks') return create_if_block_4;
+			if (ctx.leftFrame === 'line') return create_if_block_5;
+			return null;
+		}
+
+		var current_block_type = select_block_type(ctx);
+		var if_block_4 = current_block_type && current_block_type(component, ctx);
+
+		var each_value_1 = ctx.dataset.points;
+
+		var each_blocks = [];
+
+		for (var i = 0; i < each_value_1.length; i += 1) {
+			each_blocks[i] = create_each_block_1(component, get_each_context_1(ctx, each_value_1, i));
+		}
+
+		function select_block_type_1(ctx) {
+			if (ctx.bottomFrame === 'ticks') return create_if_block_6;
+			if (ctx.bottomFrame === 'line') return create_if_block_7;
+			return null;
+		}
+
+		var current_block_type_1 = select_block_type_1(ctx);
+		var if_block_6 = current_block_type_1 && current_block_type_1(component, ctx);
+
+		var each_value_3 = ctx.hoveredPoints;
+
+		const get_key = ctx => (ctx.hoveredPoint.x / ctx.minsAndMaxes.maxX) + (ctx.hoveredPoint.y / ctx.minsAndMaxes.maxY);
+
+		for (var i = 0; i < each_value_3.length; i += 1) {
+			let child_ctx = get_each_1_context(ctx, each_value_3, i);
+			let key = get_key(child_ctx);
+			each_1_blocks_1[i] = each_1_lookup[key] = create_each_block_3(component, key, child_ctx);
+		}
+
+		return {
+			c() {
+				svg = createSvgElement("svg");
+				if (if_block) if_block.c();
+				if_block_anchor = createComment();
+				if (if_block_1) if_block_1.c();
+				if_block_1_anchor = createComment();
+				if (if_block_2) if_block_2.c();
+				if_block_2_anchor = createComment();
+				if (if_block_3) if_block_3.c();
+				if_block_3_anchor = createComment();
+				if (if_block_4) if_block_4.c();
+				if_block_4_anchor = createComment();
+
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].c();
+				}
+
+				each_anchor = createComment();
+				if (if_block_6) if_block_6.c();
+				if_block_6_anchor = createComment();
+
+				for (i = 0; i < each_1_blocks_1.length; i += 1) each_1_blocks_1[i].c();
+				setAttribute(svg, "xmlns", "http://www.w3.org/2000/svg");
+				setAttribute(svg, "height", svg_height_value = "" + ctx.height + "px");
+				setAttribute(svg, "width", svg_width_value = "" + ctx.width + "px");
+			},
+
+			m(target, anchor) {
+				insert(target, svg, anchor);
+				if (if_block) if_block.i(svg, null);
+				append(svg, if_block_anchor);
+				if (if_block_1) if_block_1.i(svg, null);
+				append(svg, if_block_1_anchor);
+				if (if_block_2) if_block_2.i(svg, null);
+				append(svg, if_block_2_anchor);
+				if (if_block_3) if_block_3.i(svg, null);
+				append(svg, if_block_3_anchor);
+				if (if_block_4) if_block_4.m(svg, null);
+				append(svg, if_block_4_anchor);
+
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(svg, null);
+				}
+
+				append(svg, each_anchor);
+				if (if_block_6) if_block_6.m(svg, null);
+				append(svg, if_block_6_anchor);
+
+				for (i = 0; i < each_1_blocks_1.length; i += 1) each_1_blocks_1[i].i(svg, null);
+
+				current = true;
+			},
+
+			p(changed, ctx) {
+				if (!ctx.hoverOverlaps.maxYLabel) {
+					if (if_block) {
+						if_block.p(changed, ctx);
+					} else {
+						if_block = create_if_block(component, ctx);
+						if (if_block) if_block.c();
+					}
+
+					if_block.i(svg, if_block_anchor);
+				} else if (if_block) {
+					groupOutros();
+					if_block.o(function() {
+						if_block.d(1);
+						if_block = null;
+					});
+				}
+
+				if (!ctx.hoverOverlaps.minYLabel) {
+					if (if_block_1) {
+						if_block_1.p(changed, ctx);
+					} else {
+						if_block_1 = create_if_block_1(component, ctx);
+						if (if_block_1) if_block_1.c();
+					}
+
+					if_block_1.i(svg, if_block_1_anchor);
+				} else if (if_block_1) {
+					groupOutros();
+					if_block_1.o(function() {
+						if_block_1.d(1);
+						if_block_1 = null;
+					});
+				}
+
+				if (!ctx.hoverOverlaps.maxXLabel) {
+					if (if_block_2) {
+						if_block_2.p(changed, ctx);
+					} else {
+						if_block_2 = create_if_block_2(component, ctx);
+						if (if_block_2) if_block_2.c();
+					}
+
+					if_block_2.i(svg, if_block_2_anchor);
+				} else if (if_block_2) {
+					groupOutros();
+					if_block_2.o(function() {
+						if_block_2.d(1);
+						if_block_2 = null;
+					});
+				}
+
+				if (!ctx.hoverOverlaps.minXLabel) {
+					if (if_block_3) {
+						if_block_3.p(changed, ctx);
+					} else {
+						if_block_3 = create_if_block_3(component, ctx);
+						if (if_block_3) if_block_3.c();
+					}
+
+					if_block_3.i(svg, if_block_3_anchor);
+				} else if (if_block_3) {
+					groupOutros();
+					if_block_3.o(function() {
+						if_block_3.d(1);
+						if_block_3 = null;
+					});
+				}
+
+				if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block_4) {
+					if_block_4.p(changed, ctx);
+				} else {
+					if (if_block_4) if_block_4.d(1);
+					if_block_4 = current_block_type && current_block_type(component, ctx);
+					if (if_block_4) if_block_4.c();
+					if (if_block_4) if_block_4.m(svg, if_block_4_anchor);
+				}
+
+				if (changed.calculatePlotX || changed.dataset || changed.calculatePlotY || changed.pointSize) {
+					each_value_1 = ctx.dataset.points;
+
+					for (var i = 0; i < each_value_1.length; i += 1) {
+						const child_ctx = get_each_context_1(ctx, each_value_1, i);
+
+						if (each_blocks[i]) {
+							each_blocks[i].p(changed, child_ctx);
+						} else {
+							each_blocks[i] = create_each_block_1(component, child_ctx);
+							each_blocks[i].c();
+							each_blocks[i].m(svg, each_anchor);
+						}
+					}
+
+					for (; i < each_blocks.length; i += 1) {
+						each_blocks[i].d(1);
+					}
+					each_blocks.length = each_value_1.length;
+				}
+
+				if (current_block_type_1 === (current_block_type_1 = select_block_type_1(ctx)) && if_block_6) {
+					if_block_6.p(changed, ctx);
+				} else {
+					if (if_block_6) if_block_6.d(1);
+					if_block_6 = current_block_type_1 && current_block_type_1(component, ctx);
+					if (if_block_6) if_block_6.c();
+					if (if_block_6) if_block_6.m(svg, if_block_6_anchor);
+				}
+
+				const each_value_3 = ctx.hoveredPoints;
+
+				groupOutros();
+				each_1_blocks_1 = updateKeyedEach(each_1_blocks_1, component, changed, get_key, 1, ctx, each_value_3, each_1_lookup, svg, outroAndDestroyBlock, create_each_block_3, "i", null, get_each_1_context);
+
+				if ((!current || changed.height) && svg_height_value !== (svg_height_value = "" + ctx.height + "px")) {
+					setAttribute(svg, "height", svg_height_value);
+				}
+
+				if ((!current || changed.width) && svg_width_value !== (svg_width_value = "" + ctx.width + "px")) {
+					setAttribute(svg, "width", svg_width_value);
+				}
+			},
+
+			i(target, anchor) {
+				if (current) return;
+
+				this.m(target, anchor);
+			},
+
+			o: run,
+
+			d(detach) {
+				if (detach) {
+					detachNode(svg);
+				}
+
+				if (if_block) if_block.d();
+				if (if_block_1) if_block_1.d();
+				if (if_block_2) if_block_2.d();
+				if (if_block_3) if_block_3.d();
+				if (if_block_4) if_block_4.d();
+
+				destroyEach(each_blocks, detach);
+
+				if (if_block_6) if_block_6.d();
+
+				for (i = 0; i < each_1_blocks_1.length; i += 1) each_1_blocks_1[i].d();
+			}
+		};
+	}
+
+	// (2:1) {#if !hoverOverlaps.maxYLabel}
+	function create_if_block(component, ctx) {
+		var text, text_1_value = ctx.formatY(ctx.minsAndMaxes.maxY), text_1, text_x_value, text_y_value, text_transition, current;
+
+		return {
+			c() {
+				text = createSvgElement("text");
+				text_1 = createText(text_1_value);
+				setAttribute(text, "fill", ctx.baseColor);
+				setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				setAttribute(text, "text-anchor", "end");
+				setAttribute(text, "x", text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2));
+				setAttribute(text, "y", text_y_value = ctx.calculatePlotY(ctx.minsAndMaxes.maxY));
+				setAttribute(text, "dy", "4");
+			},
+
+			m(target, anchor) {
+				insert(target, text, anchor);
+				append(text, text_1);
+				component.refs.maxYLabel = text;
+				current = true;
+			},
+
+			p(changed, ctx) {
+				if ((!current || changed.formatY || changed.minsAndMaxes) && text_1_value !== (text_1_value = ctx.formatY(ctx.minsAndMaxes.maxY))) {
+					setData(text_1, text_1_value);
+				}
+
+				if (!current || changed.baseColor) {
+					setAttribute(text, "fill", ctx.baseColor);
+				}
+
+				if (!current || changed.fontSize) {
+					setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				}
+
+				if ((!current || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.labelBuffer) && text_x_value !== (text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2))) {
+					setAttribute(text, "x", text_x_value);
+				}
+
+				if ((!current || changed.calculatePlotY || changed.minsAndMaxes) && text_y_value !== (text_y_value = ctx.calculatePlotY(ctx.minsAndMaxes.maxY))) {
+					setAttribute(text, "y", text_y_value);
+				}
+			},
+
+			i(target, anchor) {
+				if (current) return;
+				if (component.root._intro) {
+					if (text_transition) text_transition.invalidate();
+
+					component.root._aftercreate.push(() => {
+						if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, true);
+						text_transition.run(1);
+					});
+				}
+				this.m(target, anchor);
+			},
+
+			o(outrocallback) {
+				if (!current) return;
+
+				if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, false);
+				text_transition.run(0, () => {
+					outrocallback();
+					text_transition = null;
+				});
+
+				current = false;
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(text);
+				}
+
+				if (component.refs.maxYLabel === text) component.refs.maxYLabel = null;
+				if (detach) {
+					if (text_transition) text_transition.abort();
+				}
+			}
+		};
+	}
+
+	// (16:1) {#if !hoverOverlaps.minYLabel}
+	function create_if_block_1(component, ctx) {
+		var text, text_1_value = ctx.formatY(ctx.minsAndMaxes.minY), text_1, text_x_value, text_y_value, text_transition, current;
+
+		return {
+			c() {
+				text = createSvgElement("text");
+				text_1 = createText(text_1_value);
+				setAttribute(text, "fill", ctx.baseColor);
+				setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				setAttribute(text, "text-anchor", "end");
+				setAttribute(text, "x", text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2));
+				setAttribute(text, "y", text_y_value = ctx.calculatePlotY(ctx.minsAndMaxes.minY));
+				setAttribute(text, "dy", "4");
+			},
+
+			m(target, anchor) {
+				insert(target, text, anchor);
+				append(text, text_1);
+				component.refs.minYLabel = text;
+				current = true;
+			},
+
+			p(changed, ctx) {
+				if ((!current || changed.formatY || changed.minsAndMaxes) && text_1_value !== (text_1_value = ctx.formatY(ctx.minsAndMaxes.minY))) {
+					setData(text_1, text_1_value);
+				}
+
+				if (!current || changed.baseColor) {
+					setAttribute(text, "fill", ctx.baseColor);
+				}
+
+				if (!current || changed.fontSize) {
+					setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				}
+
+				if ((!current || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.labelBuffer) && text_x_value !== (text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2))) {
+					setAttribute(text, "x", text_x_value);
+				}
+
+				if ((!current || changed.calculatePlotY || changed.minsAndMaxes) && text_y_value !== (text_y_value = ctx.calculatePlotY(ctx.minsAndMaxes.minY))) {
+					setAttribute(text, "y", text_y_value);
+				}
+			},
+
+			i(target, anchor) {
+				if (current) return;
+				if (component.root._intro) {
+					if (text_transition) text_transition.invalidate();
+
+					component.root._aftercreate.push(() => {
+						if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, true);
+						text_transition.run(1);
+					});
+				}
+				this.m(target, anchor);
+			},
+
+			o(outrocallback) {
+				if (!current) return;
+
+				if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, false);
+				text_transition.run(0, () => {
+					outrocallback();
+					text_transition = null;
+				});
+
+				current = false;
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(text);
+				}
+
+				if (component.refs.minYLabel === text) component.refs.minYLabel = null;
+				if (detach) {
+					if (text_transition) text_transition.abort();
+				}
+			}
+		};
+	}
+
+	// (30:1) {#if !hoverOverlaps.maxXLabel}
+	function create_if_block_2(component, ctx) {
+		var text, text_1_value = ctx.formatX(ctx.minsAndMaxes.maxX), text_1, text_x_value, text_y_value, text_transition, current;
+
+		return {
+			c() {
+				text = createSvgElement("text");
+				text_1 = createText(text_1_value);
+				setAttribute(text, "fill", ctx.baseColor);
+				setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				setAttribute(text, "text-anchor", "middle");
+				setAttribute(text, "x", text_x_value = ctx.calculatePlotX(ctx.minsAndMaxes.maxX));
+				setAttribute(text, "y", text_y_value = ctx.topMargin + ctx.plotHeight + ctx.plotYMargin + ctx.tickLength + ctx.labelBuffer);
+				setAttribute(text, "dy", ctx.fontSize);
+			},
+
+			m(target, anchor) {
+				insert(target, text, anchor);
+				append(text, text_1);
+				component.refs.maxXLabel = text;
+				current = true;
+			},
+
+			p(changed, ctx) {
+				if ((!current || changed.formatX || changed.minsAndMaxes) && text_1_value !== (text_1_value = ctx.formatX(ctx.minsAndMaxes.maxX))) {
+					setData(text_1, text_1_value);
+				}
+
+				if (!current || changed.baseColor) {
+					setAttribute(text, "fill", ctx.baseColor);
+				}
+
+				if (!current || changed.fontSize) {
+					setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				}
+
+				if ((!current || changed.calculatePlotX || changed.minsAndMaxes) && text_x_value !== (text_x_value = ctx.calculatePlotX(ctx.minsAndMaxes.maxX))) {
+					setAttribute(text, "x", text_x_value);
+				}
+
+				if ((!current || changed.topMargin || changed.plotHeight || changed.plotYMargin || changed.tickLength || changed.labelBuffer) && text_y_value !== (text_y_value = ctx.topMargin + ctx.plotHeight + ctx.plotYMargin + ctx.tickLength + ctx.labelBuffer)) {
+					setAttribute(text, "y", text_y_value);
+				}
+
+				if (!current || changed.fontSize) {
+					setAttribute(text, "dy", ctx.fontSize);
+				}
+			},
+
+			i(target, anchor) {
+				if (current) return;
+				if (component.root._intro) {
+					if (text_transition) text_transition.invalidate();
+
+					component.root._aftercreate.push(() => {
+						if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, true);
+						text_transition.run(1);
+					});
+				}
+				this.m(target, anchor);
+			},
+
+			o(outrocallback) {
+				if (!current) return;
+
+				if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, false);
+				text_transition.run(0, () => {
+					outrocallback();
+					text_transition = null;
+				});
+
+				current = false;
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(text);
+				}
+
+				if (component.refs.maxXLabel === text) component.refs.maxXLabel = null;
+				if (detach) {
+					if (text_transition) text_transition.abort();
+				}
+			}
+		};
+	}
+
+	// (44:1) {#if !hoverOverlaps.minXLabel}
+	function create_if_block_3(component, ctx) {
+		var text, text_1_value = ctx.formatX(ctx.minsAndMaxes.minX), text_1, text_x_value, text_y_value, text_transition, current;
+
+		return {
+			c() {
+				text = createSvgElement("text");
+				text_1 = createText(text_1_value);
+				setAttribute(text, "fill", ctx.baseColor);
+				setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				setAttribute(text, "text-anchor", "middle");
+				setAttribute(text, "x", text_x_value = ctx.calculatePlotX(ctx.minsAndMaxes.minX));
+				setAttribute(text, "y", text_y_value = ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength + ctx.labelBuffer);
+				setAttribute(text, "dy", ctx.fontSize);
+			},
+
+			m(target, anchor) {
+				insert(target, text, anchor);
+				append(text, text_1);
+				component.refs.minXLabel = text;
+				current = true;
+			},
+
+			p(changed, ctx) {
+				if ((!current || changed.formatX || changed.minsAndMaxes) && text_1_value !== (text_1_value = ctx.formatX(ctx.minsAndMaxes.minX))) {
+					setData(text_1, text_1_value);
+				}
+
+				if (!current || changed.baseColor) {
+					setAttribute(text, "fill", ctx.baseColor);
+				}
+
+				if (!current || changed.fontSize) {
+					setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				}
+
+				if ((!current || changed.calculatePlotX || changed.minsAndMaxes) && text_x_value !== (text_x_value = ctx.calculatePlotX(ctx.minsAndMaxes.minX))) {
+					setAttribute(text, "x", text_x_value);
+				}
+
+				if ((!current || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.labelBuffer) && text_y_value !== (text_y_value = ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength + ctx.labelBuffer)) {
+					setAttribute(text, "y", text_y_value);
+				}
+
+				if (!current || changed.fontSize) {
+					setAttribute(text, "dy", ctx.fontSize);
+				}
+			},
+
+			i(target, anchor) {
+				if (current) return;
+				if (component.root._intro) {
+					if (text_transition) text_transition.invalidate();
+
+					component.root._aftercreate.push(() => {
+						if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, true);
+						text_transition.run(1);
+					});
+				}
+				this.m(target, anchor);
+			},
+
+			o(outrocallback) {
+				if (!current) return;
+
+				if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, false);
+				text_transition.run(0, () => {
+					outrocallback();
+					text_transition = null;
+				});
+
+				current = false;
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(text);
+				}
+
+				if (component.refs.minXLabel === text) component.refs.minXLabel = null;
+				if (detach) {
+					if (text_transition) text_transition.abort();
+				}
+			}
+		};
+	}
+
+	// (61:2) {#each dataset.points as point}
+	function create_each_block(component, ctx) {
+		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
+
+		return {
+			c() {
+				line = createSvgElement("line");
+				setAttribute(line, "x1", line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin - ctx.tickLength) + "px");
+				setAttribute(line, "x2", line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px");
+				setAttribute(line, "y1", line_y__value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
+				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.point.y) + "px");
+				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
+				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
+			},
+
+			m(target, anchor) {
+				insert(target, line, anchor);
+			},
+
+			p(changed, ctx) {
+				if ((changed.leftMargin || changed.plotXMargin || changed.tickLength) && line_x__value !== (line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin - ctx.tickLength) + "px")) {
+					setAttribute(line, "x1", line_x__value);
+				}
+
+				if ((changed.leftMargin || changed.plotXMargin) && line_x__value_1 !== (line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px")) {
+					setAttribute(line, "x2", line_x__value_1);
+				}
+
+				if ((changed.calculatePlotY || changed.dataset) && line_y__value !== (line_y__value = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
+					setAttribute(line, "y1", line_y__value);
+				}
+
+				if ((changed.calculatePlotY || changed.dataset) && line_y__value_1 !== (line_y__value_1 = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
+					setAttribute(line, "y2", line_y__value_1);
+				}
+
+				if ((changed.dataset) && line_stroke_value !== (line_stroke_value = ctx.dataset.color)) {
+					setAttribute(line, "stroke", line_stroke_value);
+				}
+
+				if ((changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth + "px")) {
+					setAttribute(line, "stroke-width", line_stroke_width_value);
+				}
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(line);
+				}
+			}
+		};
+	}
+
+	// (60:1) {#if leftFrame === 'ticks'}
+	function create_if_block_4(component, ctx) {
+		var each_anchor;
+
+		var each_value = ctx.dataset.points;
+
+		var each_blocks = [];
+
+		for (var i = 0; i < each_value.length; i += 1) {
+			each_blocks[i] = create_each_block(component, get_each_context(ctx, each_value, i));
+		}
+
+		return {
+			c() {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].c();
+				}
+
+				each_anchor = createComment();
+			},
+
+			m(target, anchor) {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(target, anchor);
+				}
+
+				insert(target, each_anchor, anchor);
+			},
+
+			p(changed, ctx) {
+				if (changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.dataset || changed.tickWidth) {
+					each_value = ctx.dataset.points;
+
+					for (var i = 0; i < each_value.length; i += 1) {
+						const child_ctx = get_each_context(ctx, each_value, i);
+
+						if (each_blocks[i]) {
+							each_blocks[i].p(changed, child_ctx);
+						} else {
+							each_blocks[i] = create_each_block(component, child_ctx);
+							each_blocks[i].c();
+							each_blocks[i].m(each_anchor.parentNode, each_anchor);
+						}
+					}
+
+					for (; i < each_blocks.length; i += 1) {
+						each_blocks[i].d(1);
+					}
+					each_blocks.length = each_value.length;
+				}
+			},
+
+			d(detach) {
+				destroyEach(each_blocks, detach);
+
+				if (detach) {
+					detachNode(each_anchor);
+				}
+			}
+		};
+	}
+
+	// (71:31) 
+	function create_if_block_5(component, ctx) {
+		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
+
+		return {
+			c() {
+				line = createSvgElement("line");
+				setAttribute(line, "x1", line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin) + "px");
+				setAttribute(line, "x2", line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px");
+				setAttribute(line, "y1", line_y__value = "" + ctx.calculatePlotY(ctx.minsAndMaxes.minY) + "px");
+				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.minsAndMaxes.maxY) + "px");
+				setAttribute(line, "stroke", ctx.baseColor);
+				setAttribute(line, "stroke-width", "1px");
+			},
+
+			m(target, anchor) {
+				insert(target, line, anchor);
+			},
+
+			p(changed, ctx) {
+				if ((changed.leftMargin || changed.plotXMargin) && line_x__value !== (line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin) + "px")) {
+					setAttribute(line, "x1", line_x__value);
+				}
+
+				if ((changed.leftMargin || changed.plotXMargin) && line_x__value_1 !== (line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px")) {
+					setAttribute(line, "x2", line_x__value_1);
+				}
+
+				if ((changed.calculatePlotY || changed.minsAndMaxes) && line_y__value !== (line_y__value = "" + ctx.calculatePlotY(ctx.minsAndMaxes.minY) + "px")) {
+					setAttribute(line, "y1", line_y__value);
+				}
+
+				if ((changed.calculatePlotY || changed.minsAndMaxes) && line_y__value_1 !== (line_y__value_1 = "" + ctx.calculatePlotY(ctx.minsAndMaxes.maxY) + "px")) {
+					setAttribute(line, "y2", line_y__value_1);
+				}
+
+				if (changed.baseColor) {
+					setAttribute(line, "stroke", ctx.baseColor);
+				}
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(line);
+				}
+			}
+		};
+	}
+
+	// (82:1) {#each dataset.points as point}
+	function create_each_block_1(component, ctx) {
+		var circle, circle_cx_value, circle_cy_value, circle_fill_value;
+
+		return {
+			c() {
+				circle = createSvgElement("circle");
+				circle._svelte = { component, ctx };
+
+				addListener(circle, "mouseenter", mouseenter_handler);
+				setAttribute(circle, "cx", circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px");
+				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
+				setAttribute(circle, "r", ctx.pointSize);
+				setAttribute(circle, "fill", circle_fill_value = ctx.dataset.color);
+			},
+
+			m(target, anchor) {
+				insert(target, circle, anchor);
+			},
+
+			p(changed, _ctx) {
+				ctx = _ctx;
+				circle._svelte.ctx = ctx;
+				if ((changed.calculatePlotX || changed.dataset) && circle_cx_value !== (circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
+					setAttribute(circle, "cx", circle_cx_value);
+				}
+
+				if ((changed.calculatePlotY || changed.dataset) && circle_cy_value !== (circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
+					setAttribute(circle, "cy", circle_cy_value);
+				}
+
+				if (changed.pointSize) {
+					setAttribute(circle, "r", ctx.pointSize);
+				}
+
+				if ((changed.dataset) && circle_fill_value !== (circle_fill_value = ctx.dataset.color)) {
+					setAttribute(circle, "fill", circle_fill_value);
+				}
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(circle);
+				}
+
+				removeListener(circle, "mouseenter", mouseenter_handler);
+			}
+		};
+	}
+
+	// (93:2) {#each dataset.points as point}
+	function create_each_block_2(component, ctx) {
+		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
+
+		return {
+			c() {
+				line = createSvgElement("line");
+				setAttribute(line, "x1", line_x__value = "" + ctx.calculatePlotX(ctx.point.x) + "px");
+				setAttribute(line, "x2", line_x__value_1 = "" + ctx.calculatePlotX(ctx.point.x) + "px");
+				setAttribute(line, "y1", line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
+				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
+				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
+				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
+			},
+
+			m(target, anchor) {
+				insert(target, line, anchor);
+			},
+
+			p(changed, ctx) {
+				if ((changed.calculatePlotX || changed.dataset) && line_x__value !== (line_x__value = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
+					setAttribute(line, "x1", line_x__value);
+				}
+
+				if ((changed.calculatePlotX || changed.dataset) && line_x__value_1 !== (line_x__value_1 = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
+					setAttribute(line, "x2", line_x__value_1);
+				}
+
+				if ((changed.topMargin || changed.plotYMargin || changed.plotHeight) && line_y__value !== (line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px")) {
+					setAttribute(line, "y1", line_y__value);
+				}
+
+				if ((changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength) && line_y__value_1 !== (line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px")) {
+					setAttribute(line, "y2", line_y__value_1);
+				}
+
+				if ((changed.dataset) && line_stroke_value !== (line_stroke_value = ctx.dataset.color)) {
+					setAttribute(line, "stroke", line_stroke_value);
+				}
+
+				if ((changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth + "px")) {
+					setAttribute(line, "stroke-width", line_stroke_width_value);
+				}
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(line);
+				}
+			}
+		};
+	}
+
+	// (92:1) {#if bottomFrame === 'ticks'}
+	function create_if_block_6(component, ctx) {
+		var each_anchor;
+
+		var each_value_2 = ctx.dataset.points;
+
+		var each_blocks = [];
+
+		for (var i = 0; i < each_value_2.length; i += 1) {
+			each_blocks[i] = create_each_block_2(component, get_each_context_2(ctx, each_value_2, i));
+		}
+
+		return {
+			c() {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].c();
+				}
+
+				each_anchor = createComment();
+			},
+
+			m(target, anchor) {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(target, anchor);
+				}
+
+				insert(target, each_anchor, anchor);
+			},
+
+			p(changed, ctx) {
+				if (changed.calculatePlotX || changed.dataset || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth) {
+					each_value_2 = ctx.dataset.points;
+
+					for (var i = 0; i < each_value_2.length; i += 1) {
+						const child_ctx = get_each_context_2(ctx, each_value_2, i);
+
+						if (each_blocks[i]) {
+							each_blocks[i].p(changed, child_ctx);
+						} else {
+							each_blocks[i] = create_each_block_2(component, child_ctx);
+							each_blocks[i].c();
+							each_blocks[i].m(each_anchor.parentNode, each_anchor);
+						}
+					}
+
+					for (; i < each_blocks.length; i += 1) {
+						each_blocks[i].d(1);
+					}
+					each_blocks.length = each_value_2.length;
+				}
+			},
+
+			d(detach) {
+				destroyEach(each_blocks, detach);
+
+				if (detach) {
+					detachNode(each_anchor);
+				}
+			}
+		};
+	}
+
+	// (103:33) 
+	function create_if_block_7(component, ctx) {
+		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
+
+		return {
+			c() {
+				line = createSvgElement("line");
+				setAttribute(line, "x1", line_x__value = "" + ctx.calculatePlotX(ctx.minsAndMaxes.minX) + "px");
+				setAttribute(line, "x2", line_x__value_1 = "" + ctx.calculatePlotX(ctx.minsAndMaxes.maxX) + "px");
+				setAttribute(line, "y1", line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
+				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
+				setAttribute(line, "stroke", ctx.baseColor);
+				setAttribute(line, "stroke-width", "1px");
+			},
+
+			m(target, anchor) {
+				insert(target, line, anchor);
+			},
+
+			p(changed, ctx) {
+				if ((changed.calculatePlotX || changed.minsAndMaxes) && line_x__value !== (line_x__value = "" + ctx.calculatePlotX(ctx.minsAndMaxes.minX) + "px")) {
+					setAttribute(line, "x1", line_x__value);
+				}
+
+				if ((changed.calculatePlotX || changed.minsAndMaxes) && line_x__value_1 !== (line_x__value_1 = "" + ctx.calculatePlotX(ctx.minsAndMaxes.maxX) + "px")) {
+					setAttribute(line, "x2", line_x__value_1);
+				}
+
+				if ((changed.topMargin || changed.plotYMargin || changed.plotHeight) && line_y__value !== (line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px")) {
+					setAttribute(line, "y1", line_y__value);
+				}
+
+				if ((changed.topMargin || changed.plotYMargin || changed.plotHeight) && line_y__value_1 !== (line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px")) {
+					setAttribute(line, "y2", line_y__value_1);
+				}
+
+				if (changed.baseColor) {
+					setAttribute(line, "stroke", ctx.baseColor);
+				}
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(line);
+				}
+			}
+		};
+	}
+
+	// (114:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
+	function create_each_block_3(component, key_1, ctx) {
+		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_transition, line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_x_value, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_x_value, text_2_y_value, text_2_transition, current;
+
+		return {
+			key: key_1,
+
+			first: null,
+
+			c() {
+				circle = createSvgElement("circle");
+				line = createSvgElement("line");
+				line_1 = createSvgElement("line");
+				text = createSvgElement("text");
+				text_1 = createText(text_1_value);
+				text_2 = createSvgElement("text");
+				text_3 = createText(text_3_value);
+				circle._svelte = { component };
+
+				addListener(circle, "mouseleave", mouseleave_handler);
+				setAttribute(circle, "cx", circle_cx_value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
+				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
+				setAttribute(circle, "r", circle_r_value = ctx.pointSize * 3);
+				setAttribute(circle, "fill", ctx.highlightColor);
+				setAttribute(line, "x1", line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin - ctx.tickLength) + "px");
+				setAttribute(line, "x2", line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px");
+				setAttribute(line, "y1", line_y__value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
+				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
+				setAttribute(line, "stroke", ctx.highlightColor);
+				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth * 10 + "px");
+				setAttribute(line_1, "x1", line_1_x__value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
+				setAttribute(line_1, "x2", line_1_x__value_1 = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
+				setAttribute(line_1, "y1", line_1_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
+				setAttribute(line_1, "y2", line_1_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
+				setAttribute(line_1, "stroke", ctx.highlightColor);
+				setAttribute(line_1, "stroke-width", line_1_stroke_width_value = "" + ctx.tickWidth * 10 + "px");
+				setAttribute(text, "fill", ctx.highlightColor);
+				setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				setAttribute(text, "text-anchor", "end");
+				setAttribute(text, "x", text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2));
+				setAttribute(text, "y", text_y_value = ctx.calculatePlotY(ctx.hoveredPoint.y));
+				setAttribute(text, "dy", "4");
+				setAttribute(text_2, "fill", ctx.highlightColor);
+				setStyle(text_2, "font-size", "" + ctx.fontSize + "px");
+				setAttribute(text_2, "text-anchor", "middle");
+				setAttribute(text_2, "x", text_2_x_value = ctx.calculatePlotX(ctx.hoveredPoint.x));
+				setAttribute(text_2, "y", text_2_y_value = ctx.topMargin + ctx.plotHeight + ctx.plotYMargin + ctx.tickLength + ctx.labelBuffer);
+				setAttribute(text_2, "dy", ctx.fontSize);
+				this.first = circle;
+			},
+
+			m(target, anchor) {
+				insert(target, circle, anchor);
+				insert(target, line, anchor);
+				insert(target, line_1, anchor);
+				insert(target, text, anchor);
+				append(text, text_1);
+				insert(target, text_2, anchor);
+				append(text_2, text_3);
+				current = true;
+			},
+
+			p(changed, ctx) {
+				if ((!current || changed.calculatePlotX || changed.hoveredPoints) && circle_cx_value !== (circle_cx_value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px")) {
+					setAttribute(circle, "cx", circle_cx_value);
+				}
+
+				if ((!current || changed.calculatePlotY || changed.hoveredPoints) && circle_cy_value !== (circle_cy_value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px")) {
+					setAttribute(circle, "cy", circle_cy_value);
+				}
+
+				if ((!current || changed.pointSize) && circle_r_value !== (circle_r_value = ctx.pointSize * 3)) {
+					setAttribute(circle, "r", circle_r_value);
+				}
+
+				if (!current || changed.highlightColor) {
+					setAttribute(circle, "fill", ctx.highlightColor);
+				}
+
+				if ((!current || changed.leftMargin || changed.plotXMargin || changed.tickLength) && line_x__value !== (line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin - ctx.tickLength) + "px")) {
+					setAttribute(line, "x1", line_x__value);
+				}
+
+				if ((!current || changed.leftMargin || changed.plotXMargin) && line_x__value_1 !== (line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px")) {
+					setAttribute(line, "x2", line_x__value_1);
+				}
+
+				if ((!current || changed.calculatePlotY || changed.hoveredPoints) && line_y__value !== (line_y__value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px")) {
+					setAttribute(line, "y1", line_y__value);
+				}
+
+				if ((!current || changed.calculatePlotY || changed.hoveredPoints) && line_y__value_1 !== (line_y__value_1 = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px")) {
+					setAttribute(line, "y2", line_y__value_1);
+				}
+
+				if (!current || changed.highlightColor) {
+					setAttribute(line, "stroke", ctx.highlightColor);
+				}
+
+				if ((!current || changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth * 10 + "px")) {
+					setAttribute(line, "stroke-width", line_stroke_width_value);
+				}
+
+				if ((!current || changed.calculatePlotX || changed.hoveredPoints) && line_1_x__value !== (line_1_x__value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px")) {
+					setAttribute(line_1, "x1", line_1_x__value);
+				}
+
+				if ((!current || changed.calculatePlotX || changed.hoveredPoints) && line_1_x__value_1 !== (line_1_x__value_1 = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px")) {
+					setAttribute(line_1, "x2", line_1_x__value_1);
+				}
+
+				if ((!current || changed.topMargin || changed.plotYMargin || changed.plotHeight) && line_1_y__value !== (line_1_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px")) {
+					setAttribute(line_1, "y1", line_1_y__value);
+				}
+
+				if ((!current || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength) && line_1_y__value_1 !== (line_1_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px")) {
+					setAttribute(line_1, "y2", line_1_y__value_1);
+				}
+
+				if (!current || changed.highlightColor) {
+					setAttribute(line_1, "stroke", ctx.highlightColor);
+				}
+
+				if ((!current || changed.tickWidth) && line_1_stroke_width_value !== (line_1_stroke_width_value = "" + ctx.tickWidth * 10 + "px")) {
+					setAttribute(line_1, "stroke-width", line_1_stroke_width_value);
+				}
+
+				if ((!current || changed.formatY || changed.hoveredPoints) && text_1_value !== (text_1_value = ctx.formatY(ctx.hoveredPoint.y))) {
+					setData(text_1, text_1_value);
+				}
+
+				if (!current || changed.highlightColor) {
+					setAttribute(text, "fill", ctx.highlightColor);
+				}
+
+				if (!current || changed.fontSize) {
+					setStyle(text, "font-size", "" + ctx.fontSize + "px");
+				}
+
+				if ((!current || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.labelBuffer) && text_x_value !== (text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2))) {
+					setAttribute(text, "x", text_x_value);
+				}
+
+				if ((!current || changed.calculatePlotY || changed.hoveredPoints) && text_y_value !== (text_y_value = ctx.calculatePlotY(ctx.hoveredPoint.y))) {
+					setAttribute(text, "y", text_y_value);
+				}
+
+				if ((!current || changed.formatX || changed.hoveredPoints) && text_3_value !== (text_3_value = ctx.formatX(ctx.hoveredPoint.x))) {
+					setData(text_3, text_3_value);
+				}
+
+				if (!current || changed.highlightColor) {
+					setAttribute(text_2, "fill", ctx.highlightColor);
+				}
+
+				if (!current || changed.fontSize) {
+					setStyle(text_2, "font-size", "" + ctx.fontSize + "px");
+				}
+
+				if ((!current || changed.calculatePlotX || changed.hoveredPoints) && text_2_x_value !== (text_2_x_value = ctx.calculatePlotX(ctx.hoveredPoint.x))) {
+					setAttribute(text_2, "x", text_2_x_value);
+				}
+
+				if ((!current || changed.topMargin || changed.plotHeight || changed.plotYMargin || changed.tickLength || changed.labelBuffer) && text_2_y_value !== (text_2_y_value = ctx.topMargin + ctx.plotHeight + ctx.plotYMargin + ctx.tickLength + ctx.labelBuffer)) {
+					setAttribute(text_2, "y", text_2_y_value);
+				}
+
+				if (!current || changed.fontSize) {
+					setAttribute(text_2, "dy", ctx.fontSize);
+				}
+			},
+
+			i(target, anchor) {
+				if (current) return;
+				if (component.root._intro) {
+					if (circle_transition) circle_transition.invalidate();
+
+					component.root._aftercreate.push(() => {
+						if (!circle_transition) circle_transition = wrapTransition(component, circle, fade, {duration: 100}, true);
+						circle_transition.run(1);
+					});
+					if (line_transition) line_transition.invalidate();
+
+					component.root._aftercreate.push(() => {
+						if (!line_transition) line_transition = wrapTransition(component, line, fade, {duration: 200}, true);
+						line_transition.run(1);
+					});
+					if (line_1_transition) line_1_transition.invalidate();
+
+					component.root._aftercreate.push(() => {
+						if (!line_1_transition) line_1_transition = wrapTransition(component, line_1, fade, {duration: 200}, true);
+						line_1_transition.run(1);
+					});
+					if (text_transition) text_transition.invalidate();
+
+					component.root._aftercreate.push(() => {
+						if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, true);
+						text_transition.run(1);
+					});
+					if (text_2_transition) text_2_transition.invalidate();
+
+					component.root._aftercreate.push(() => {
+						if (!text_2_transition) text_2_transition = wrapTransition(component, text_2, fade, {duration: 200}, true);
+						text_2_transition.run(1);
+					});
+				}
+				this.m(target, anchor);
+			},
+
+			o(outrocallback) {
+				if (!current) return;
+
+				outrocallback = callAfter(outrocallback, 5);
+
+				if (!circle_transition) circle_transition = wrapTransition(component, circle, fade, {duration: 100}, false);
+				circle_transition.run(0, () => {
+					outrocallback();
+					circle_transition = null;
+				});
+
+				if (!line_transition) line_transition = wrapTransition(component, line, fade, {duration: 200}, false);
+				line_transition.run(0, () => {
+					outrocallback();
+					line_transition = null;
+				});
+
+				if (!line_1_transition) line_1_transition = wrapTransition(component, line_1, fade, {duration: 200}, false);
+				line_1_transition.run(0, () => {
+					outrocallback();
+					line_1_transition = null;
+				});
+
+				if (!text_transition) text_transition = wrapTransition(component, text, fade, {duration: 200}, false);
+				text_transition.run(0, () => {
+					outrocallback();
+					text_transition = null;
+				});
+
+				if (!text_2_transition) text_2_transition = wrapTransition(component, text_2, fade, {duration: 200}, false);
+				text_2_transition.run(0, () => {
+					outrocallback();
+					text_2_transition = null;
+				});
+
+				current = false;
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(circle);
+				}
+
+				removeListener(circle, "mouseleave", mouseleave_handler);
+				if (detach) {
+					if (circle_transition) circle_transition.abort();
+					detachNode(line);
+					if (line_transition) line_transition.abort();
+					detachNode(line_1);
+					if (line_1_transition) line_1_transition.abort();
+					detachNode(text);
+					if (text_transition) text_transition.abort();
+					detachNode(text_2);
+					if (text_2_transition) text_2_transition.abort();
+				}
+			}
+		};
+	}
+
+	function get_each_context(ctx, list, i) {
+		const child_ctx = Object.create(ctx);
+		child_ctx.point = list[i];
+		child_ctx.each_value = list;
+		child_ctx.point_index = i;
+		return child_ctx;
+	}
+
+	function get_each_context_1(ctx, list, i) {
+		const child_ctx = Object.create(ctx);
+		child_ctx.point = list[i];
+		child_ctx.each_value_1 = list;
+		child_ctx.point_index_1 = i;
+		return child_ctx;
+	}
+
+	function mouseenter_handler(event) {
+		const { component, ctx } = this._svelte;
+
+		component.hover(ctx.point);
+	}
+
+	function get_each_context_2(ctx, list, i) {
+		const child_ctx = Object.create(ctx);
+		child_ctx.point = list[i];
+		child_ctx.each_value_2 = list;
+		child_ctx.point_index_2 = i;
+		return child_ctx;
+	}
+
+	function get_each_1_context(ctx, list, i) {
+		const child_ctx = Object.create(ctx);
+		child_ctx.hoveredPoint = list[i];
+		child_ctx.each_value_3 = list;
+		child_ctx.hoveredPoint_index = i;
+		return child_ctx;
+	}
+
+	function mouseleave_handler(event) {
+		const { component } = this._svelte;
+
+		component.hover(null);
+	}
+
+	function ScatterGraph(options) {
+		init(this, options);
+		this.refs = {};
+		this._state = assign(data(), options.data);
+		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, dataset: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1 }, this._state);
+		this._intro = true;
+
+		this._fragment = create_main_fragment(this, this._state);
+
+		if (options.target) {
+			this._fragment.c();
+			this._mount(options.target, options.anchor);
+
+			flush(this);
+		}
+	}
+
+	assign(ScatterGraph.prototype, proto);
+	assign(ScatterGraph.prototype, methods);
+
+	ScatterGraph.prototype._recompute = function _recompute(changed, state) {
+		if (changed.width || changed.leftMargin || changed.rightMargin) {
+			if (this._differs(state.plotWidth, (state.plotWidth = plotWidth(state)))) changed.plotWidth = true;
+		}
+
+		if (changed.height || changed.bottomMargin || changed.topMargin) {
+			if (this._differs(state.plotHeight, (state.plotHeight = plotHeight(state)))) changed.plotHeight = true;
+		}
+
+		if (changed.dataset) {
+			if (this._differs(state.minsAndMaxes, (state.minsAndMaxes = minsAndMaxes(state)))) changed.minsAndMaxes = true;
+		}
+
+		if (changed.minsAndMaxes) {
+			if (this._differs(state.dataRanges, (state.dataRanges = dataRanges(state)))) changed.dataRanges = true;
+		}
+
+		if (changed.leftMargin || changed.plotWidth || changed.minsAndMaxes || changed.dataRanges) {
+			if (this._differs(state.calculatePlotX, (state.calculatePlotX = calculatePlotX(state)))) changed.calculatePlotX = true;
+		}
+
+		if (changed.plotHeight || changed.minsAndMaxes || changed.dataRanges || changed.topMargin) {
+			if (this._differs(state.calculatePlotY, (state.calculatePlotY = calculatePlotY(state)))) changed.calculatePlotY = true;
+		}
+	};
+
+	var regexSource = regex => regex instanceof RegExp ? regex.source : regex;
+
+	const closingCharacters = {
+		'(': ')',
+		'[': ']',
+	};
+
+	var isAtomic = function isAtomic(regex) {
+		const string = regexSource(regex);
+
+		return /^\w$/.test(string) || enclosedByTopLevelCharacters(string)
+	};
+
+	function enclosedByTopLevelCharacters(string) {
+		const openingCharacter = string[0];
+		const closingCharacter = closingCharacters[openingCharacter];
+
+
+		const closedByAppropriateCharacter = closingCharacter !== undefined
+			&& string[string.length - 1] === closingCharacter;
+
+
+		if (!closedByAppropriateCharacter) {
+			return false
+		}
+
+		return !isClosedBeforeEndOfString(0, string, openingCharacter, closingCharacter)
+	}
+
+
+	function isClosedBeforeEndOfString(depth, string, openingCharacter, closingCharacter) {
+		if (string.length === 1 && string[0] === closingCharacter && depth === 1) {
+			return false
+		}
+		const [ nextCharacter, ...restOfCharacters ] = string;
+		const newDepth = calculateNewDepth(depth, openingCharacter, closingCharacter, nextCharacter);
+
+		if (newDepth === 0) {
+			return true
+		}
+
+		return isClosedBeforeEndOfString(newDepth, restOfCharacters, openingCharacter, closingCharacter)
+	}
+
+	function calculateNewDepth(previousDepth, openingCharacter, closingCharacter, character) {
+		if (character === openingCharacter) {
+			return previousDepth + 1
+		} else if (character === closingCharacter) {
+			return previousDepth - 1
+		} else {
+			return previousDepth
+		}
+	}
+
+	const combine = returnsRegex((...args) => escapeInputForCombining(...args).join(''));
+	const guaranteeAtomic = regex => isAtomic(regex) ? regex : `(?:${regexSource(regex)})`;
+	const escapeRegex = str => str.replace(/[.?*+^$[\]\\(){}|-]/g, '\\$&');
+	const ifRegex = (input, ifCase, elseIfCase) => input instanceof RegExp ? ifCase(input) : elseIfCase(input);
+	const escapeInputAndReturnString = regex => ifRegex(regex, regex => regex.source, escapeRegex);
+
+	var regexFun = {
+		combine,
+		either: makeJoiningFunction('(?:', '|', ')'),
+		capture: makeJoiningFunction('(', '', ')'),
+
+		flags: (flags, ...args) => new RegExp(combine(...args).source, flags),
+
+		anyNumber: suffix('*'),
+		oneOrMore: suffix('+'),
+		optional: suffix('?'),
+		exactly: (n, ...regexes) => suffix(`{${n}}`)(...regexes),
+		atLeast: (n, ...regexes) => suffix(`{${n},}`)(...regexes),
+		between: (n, m, ...regexes) => suffix(`{${n},${m}}`)(...regexes),
+
+		anyNumberNonGreedy: suffix('*?'),
+		oneOrMoreNonGreedy: suffix('+?'),
+		optionalNonGreedy: suffix('??'),
+		exactlyNonGreedy: (n, ...regexes) => suffix(`{${n}}?`)(...regexes),
+		atLeastNonGreedy: (n, ...regexes) => suffix(`{${n},}?`)(...regexes),
+		betweenNonGreedy: (n, m, ...regexes) => suffix(`{${n},${m}}?`)(...regexes),
+	};
+
+	function removeNonCapturingGroupIfExists(regexString) {
+		const match = /^\(\?:(.+)\)$/.exec(regexString);
+		return match ? match[1] : regexString
+	}
+
+	function guaranteeNoTopLevelOrs(regexString) {
+		return regexString.indexOf('|') >= 0 ? guaranteeAtomic(regexString) : regexString
+	}
+
+	function escapeInputForCombining(...args) {
+		return args.map(escapeInputAndReturnString).map(guaranteeNoTopLevelOrs)
+	}
+
+	function returnsRegex(fn) {
+		return (...args) => ifRegex(fn(...args), regex => regex, input => new RegExp(input))
+	}
+
+	function makeJoiningFunction(openingCharacter, joinCharacter, closingCharacter) {
+		return returnsRegex((...args) => {
+			const naiveBody = escapeInputForCombining(...args).join(joinCharacter);
+			const body = isAtomic(naiveBody) ? removeNonCapturingGroupIfExists(naiveBody) : naiveBody;
+
+			return concat(openingCharacter, body, closingCharacter)
+		})
+	}
+
+	function suffix(appendCharacter) {
+		return returnsRegex((...args) => concat(guaranteeAtomic(combine(...args)), appendCharacter))
+	}
+
+	function concat(...regexes) {
+		return regexes.map(regexSource).join('')
+	}
+
+	var basicXhr = function makeXhrFunction(inputOptions) {
+		var options = Object.assign({
+			method: 'GET',
+			success: defaultSuccess,
+			parse: defaultParse,
+			serialize: defaultSerialize,
+			headers: {},
+		}, inputOptions);
+
+		return function xhr(url, body) {
+			return new Promise(function promise(resolve, reject) {
+				var request = new XMLHttpRequest();
+				request.addEventListener('load', handleResult);
+				request.addEventListener('error', reject);
+				request.addEventListener('abort', reject);
+				request.open(options.method, url);
+
+				Object.keys(options.headers).forEach(function(key) {
+					request.setRequestHeader(key, options.headers[key]);
+				});
+
+				if (typeof body === 'undefined') {
+					request.send();
+				} else {
+					request.send(options.serialize(body));
+				}
+
+				function handleResult() {
+					try {
+						var response = options.parse(request);
+
+						options.success(request) ? resolve(response) : reject(response);
+					} catch (e) {
+						reject(e);
+					}
+				}
+			})
+		}
+	};
+
+	function defaultSuccess(request) {
+		return request.status >= 200 && request.status < 400
+	}
+
+	function defaultSerialize(body) {
+		return JSON.stringify(body)
+	}
+
+	function defaultParse(request) {
+		return JSON.parse(request.responseText)
+	}
+
+	function createCommonjsModule(fn, module) {
+		return module = { exports: {} }, fn(module, module.exports), module.exports;
+	}
+
+	var urlBuilder = {
+		buildIndexUrl: function buildIndexUrl(key) {
+			return "https://spreadsheets.google.com/feeds/worksheets/" + key + "/public/basic?alt=json";
+		},
+		buildSheetUrl: function buildSheetUrl(key, sheetId) {
+			return "https://spreadsheets.google.com/feeds/list/" + key + "/" + sheetId + "/public/values?alt=json";
+		}
+	};
+
+	var orderedEntries = function orderedEntries(o) {
+		return Object.getOwnPropertyNames(o).map(function(key) {
+			return [ key, o[key] ]
+		})
+	};
+
+	var slicedToArray = function () {
+	  function sliceIterator(arr, i) {
+	    var _arr = [];
+	    var _n = true;
+	    var _d = false;
+	    var _e = undefined;
+
+	    try {
+	      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+	        _arr.push(_s.value);
+
+	        if (i && _arr.length === i) break;
+	      }
+	    } catch (err) {
+	      _d = true;
+	      _e = err;
+	    } finally {
+	      try {
+	        if (!_n && _i["return"]) _i["return"]();
+	      } finally {
+	        if (_d) throw _e;
+	      }
+	    }
+
+	    return _arr;
+	  }
+
+	  return function (arr, i) {
+	    if (Array.isArray(arr)) {
+	      return arr;
+	    } else if (Symbol.iterator in Object(arr)) {
+	      return sliceIterator(arr, i);
+	    } else {
+	      throw new TypeError("Invalid attempt to destructure non-iterable instance");
+	    }
+	  };
+	}();
+
+	var sheetsy = createCommonjsModule(function (module) {
+		var buildIndexUrl = urlBuilder.buildIndexUrl,
+		    buildSheetUrl = urlBuilder.buildSheetUrl;
+
+
+		module.exports = function (defaultGet) {
+			function getWorkbook(key) {
+				var get$$1 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGet;
+
+				return get$$1(buildIndexUrl(key)).then(function (workbookData) {
+					var feed = workbookData.feed;
+					var sheets = feed.entry.map(function (sheetData) {
+						var selfSheetUrl = sheetData.link.find(function (link) {
+							return link.rel === 'self';
+						}).href;
+						return {
+							name: textOf(sheetData.title),
+							id: afterLastSlash(selfSheetUrl),
+							updated: textOf(sheetData.updated)
+						};
+					});
+
+					return {
+						name: textOf(feed.title),
+						updated: textOf(feed.updated),
+						authors: getAuthors(feed),
+						sheets: sheets
+					};
+				});
+			}
+
+			function getSheet(key, id) {
+				var get$$1 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGet;
+
+				return get$$1(buildSheetUrl(key, id)).then(function (sheetData) {
+					var feed = sheetData.feed;
+					var rows = feed.entry.map(function (entry) {
+						var originalCellKeysAndValues = orderedEntries(entry).filter(function (_ref) {
+							var _ref2 = slicedToArray(_ref, 1),
+							    key = _ref2[0];
+
+							return (/^gsx\$/.test(key)
+							);
+						}).map(function (_ref3) {
+							var _ref4 = slicedToArray(_ref3, 2),
+							    key = _ref4[0],
+							    value = _ref4[1];
+
+							return {
+								key: key.replace('gsx$', ''),
+								value: textOf(value)
+							};
+						});
+
+						var array = originalCellKeysAndValues.map(function (_ref5) {
+							var value = _ref5.value;
+							return value;
+						});
+
+						originalCellKeysAndValues.filter(function (_ref6) {
+							var key = _ref6.key;
+							return (/^[^_]/.test(key)
+							);
+						}).forEach(function (_ref7) {
+							var key = _ref7.key,
+							    value = _ref7.value;
+
+							array[key] = value;
+						});
+
+						return array;
+					});
+
+					return {
+						name: textOf(feed.title),
+						updated: textOf(feed.updated),
+						authors: getAuthors(feed),
+						rows: rows
+					};
+				});
+			}
+
+			function urlToKey(url) {
+				return firstCapture(/key=(.*?)(&|#|$)/, url) || firstCapture(/d\/(.*?)\/pubhtml/, url) || firstCapture(/spreadsheets\/d\/(.*?)\//, url) || toss('No key found in ' + url);
+			}
+
+			return {
+				getWorkbook: getWorkbook,
+				getSheet: getSheet,
+				urlToKey: urlToKey
+			};
+		};
+
+		var textOf = function textOf(field) {
+			return field.$t;
+		};
+
+		var getAuthors = function getAuthors(data) {
+			return data.author.map(function (_ref8) {
+				var name = _ref8.name,
+				    email = _ref8.email;
+				return {
+					name: textOf(name),
+					email: textOf(email)
+				};
+			});
+		};
+
+		var afterLastSlash = function afterLastSlash(str) {
+			return str.split('/').pop();
+		};
+
+		var firstCapture = function firstCapture(regex, str) {
+			var match = regex.exec(str);
+			return match && match[1];
+		};
+
+		var toss = function toss(message) {
+			throw new Error(message);
+		};
+	});
+
+	var indexBrowser = sheetsy(basicXhr());
+
+	var browserBuild = indexBrowser;
+
+	const { getSheet } = browserBuild;
+
+	const documentId = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`;
+	const sheet1Id = `ouieeg5`;
+
+	const digits = /(\d+)/;
+	const stupidDate = regexFun.combine(/^/, digits, `/`, digits, `/`, digits, ` `, digits, `:`, digits, `:`, digits, /$/);
+	const pad2 = str => str.length === 1 ? `0` + str : str;
+	const parseStupidDateOrIso = dateString => {
+		const match = dateString.match(stupidDate);
+		if (match) {
+			const [ , month, day, year, hour, minute, second ] = match;
+			dateString = `${ year }-${ pad2(month) }-${ pad2(day) } ${ pad2(hour) }:${ pad2(minute) }:${ pad2(second) }`;
+		}
+
+		return Date.parse(dateString)
+	};
+
+	async function main() {
+		const graphTarget = document.getElementById(`graph-target`);
+
+		const sheet = await getSheet(documentId, sheet1Id);
+
+		const points = sheet.rows.map(({ timestamp, weight }) => ({
+			x: parseStupidDateOrIso(timestamp),
+			y: parseFloat(weight),
+		}));
+
+		graphTarget.innerText = ``;
+
+		new ScatterGraph({
+			target: graphTarget,
+			data: {
+				dataset: {
+					points,
+					color: `#139090`,
+				},
+				bottomFrame: `ticks`,
+				leftFrame: `ticks`,
+				xLabel: `Date`,
+				formatX: x => new Date(x).toLocaleDateString(),
+				yLabel: `Pounds`,
+				formatY: y => y.toFixed(1),
+			},
+		});
+	}
+
+	main();
+
+}());
+//# sourceMappingURL=bundle.js.map
