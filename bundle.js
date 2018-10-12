@@ -2409,7 +2409,7 @@
 					points,
 					color: `#139090`,
 				},
-				bottomFrame: `ticks`,
+				bottomFrame: `line`,
 				leftFrame: `ticks`,
 				xLabel: `Date`,
 				formatX: x => new Date(x).toLocaleDateString(),
