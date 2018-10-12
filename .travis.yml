@@ -1,0 +1,13 @@
+sudo: false
+language: node_js
+node_js:
+  - "10"
+script:
+  - npm run test
+  - npm run build
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: ./deploy-to-ghpages.sh
+    on:
+      branch: master
