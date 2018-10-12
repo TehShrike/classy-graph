@@ -43,7 +43,7 @@ async function main() {
 			xLabel: `Date`,
 			formatX: x => new Date(x).toLocaleDateString(),
 			yLabel: `Pounds`,
-			formatY: y => `${ y }lb`,
+			formatY: y => y.toFixed(1),
 		},
 	})
 }
