@@ -4,3 +4,8 @@ An exercise in creating classy graphs with [Svelte](https://svelte.technology/),
 npm i
 npm run build
 ```
+
+## Big Mac index
+
+The Big Mac Index data is from https://github.com/TheEconomist/big-mac-data/blob/master/source-data/big-mac-source-data.csv
+

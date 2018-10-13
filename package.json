@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified :-(\" && exit 0",
-    "build": "rollup -c",
+    "build": "node big-mac-data/process.js && rollup -c",
     "watch": "rollup -c -w --dev"
   },
   "keywords": [
@@ -16,7 +16,9 @@
   "author": "TehShrike",
   "license": "WTFPL",
   "devDependencies": {
+    "camelcase": "5.0.0",
     "date-fns": "1.29.0",
+    "neat-csv": "3.0.0",
     "nodemon": "1.18.4",
     "regex-fun": "2.0.2",
     "rollup": "0.66.4",
