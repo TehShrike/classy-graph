@@ -8,15 +8,53 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="stylesheet" href="./style.css">
 	</head>
-	<body>
+	<body data-weight-loaded=false>
 		<h1>Classy Graph</h1>
 		<h2>An exercise in "data-ink maximization"</h2>
 		<p>
 			Based on chapter 6 of <a href="https://www.amazon.com/Visual-Display-Quantitative-Information/dp/0961392142">The Visual Display of Quantitative Information</a> by Edward R. Tufte.
 		</p>
-		<div id="graph-target">
+
+
+		<div data-when-not=weight-loaded>
 			Loading data from Google Sheets...
 		</div>
+		<div id=graph-target>
+		</div>
+		<div data-when=weight-loaded style="justify-content: center;">
+			<label>
+				<input type=radio name=weight value=year checked>
+				Last year
+			</label>
+			<label>
+				<input type=radio name=weight value=threeMonths>
+				Last 3 months
+			</label>
+		</div>
+		<style>
+			label {
+				display: flex;
+				align-items: center;
+				padding-left: 4px;
+				padding-right: 4px;
+			}
+			label > * {
+				margin-left: 8px;
+				margin-right: 8px;
+			}
+
+			[data-when] {
+				display: none;
+			}
+			[data-weight-loaded=true] [data-when=weight-loaded] {
+				display: flex;
+			}
+			:not([data-weight-loaded=true]) [data-when-not=weight-loaded] {
+				display: none;
+			}
+		</style>
+
+
 		<p>
 			For a more general/powerful graphing library with a similarly small footprint, see <a href="https://layercake.graphics/">Layer Cake</a>.
 		</p>

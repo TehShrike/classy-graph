@@ -3,25 +3,48 @@ import r from 'regex-fun'
 import sheetsy from 'sheetsy'
 const { getSheet } = sheetsy
 
+
+import subtractMonths from 'date-fns/sub_months'
+
 async function main() {
+	const body = document.body
 	const points = await getWeightDataPoints()
 
-	const graphTarget = document.getElementById(`graph-target`)
+	const weightRadioButtons = document.querySelectorAll(`input[name=weight]`)
 
-	graphTarget.innerText = ``
+	const getCurrentDataset = () => {
+		const currentlyChecked = Array.prototype.filter.call(weightRadioButtons, input => input.checked)
+			.reduce((_, input) => input.value, `year`)
+		return {
+			color: `#139090`,
+			points: points[currentlyChecked],
+		}
+	}
 
-	new ScatterGraph({
-		target: graphTarget,
+	const graph = new ScatterGraph({
+		target: document.getElementById(`graph-target`),
 		data: {
-			dataset: {
-				points,
-				color: `#139090`,
-			},
+			dataset: getCurrentDataset(),
 			bottomFrame: `ticks`,
 			leftFrame: `ticks`,
-			formatX: x => new Date(x).toLocaleDateString(),
+			formatX: x => {
+				const date = new Date(x)
+				return `${ date.getFullYear() }-${ date.getMonth() + 1 }-${ date.getDate() }`
+			},
 			formatY: y => `${ y.toFixed(1) }lb`,
 		},
+	})
+
+	body.dataset.weightLoaded = true
+
+	weightRadioButtons.forEach(element => {
+		element.addEventListener(`change`, () => {
+			if (element.checked) {
+				graph.set({
+					dataset: getCurrentDataset(),
+				})
+			}
+		})
 	})
 }
 
@@ -50,8 +73,19 @@ async function getWeightDataPoints() {
 
 	const sheet = await getSheet(documentId, sheet1Id)
 
-	return sheet.rows.map(({ timestamp, weight }) => ({
+	const allPoints = sheet.rows.map(({ timestamp, weight }) => ({
 		x: parseStupidDateOrIso(timestamp),
 		y: parseFloat(weight),
 	}))
+
+	const now = new Date()
+	const yearAgo = subtractMonths(now, 12).valueOf()
+	const threeMonthsAgo = subtractMonths(now, 3).valueOf()
+
+	const year = allPoints.filter(({ x: timestamp }) => timestamp > yearAgo)
+
+	return {
+		year,
+		threeMonths: year.filter(({ x: timestamp }) => timestamp > threeMonthsAgo),
+	}
 }
