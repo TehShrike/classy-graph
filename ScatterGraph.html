@@ -13,20 +13,6 @@
 			{ formatY(minsAndMaxes.maxY) }
 		</text>
 	{/if}
-	{#if yLabel && !hoverOverlaps.yLabel}
-		<text
-			fill={baseColor}
-			style="font-size: {fontSize}px;"
-			text-anchor=end
-			x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
-			y={ calculatePlotY(minsAndMaxes.minY + ((minsAndMaxes.maxY - minsAndMaxes.minY) / 2)) }
-			dy=4
-			transition:fade="{duration: 200}"
-			ref:yLabel
-		>
-			{ yLabel }
-		</text>
-	{/if}
 	{#if !hoverOverlaps.minYLabel}
 		<text
 			fill={baseColor}
@@ -252,10 +238,6 @@ export default {
 
 				if (this.refs.maxYLabel) {
 					hoverOverlaps.maxYLabel = overlapsY(this.refs.maxYLabel, pointYPosition)
-				}
-
-				if (this.refs.yLabel) {
-					hoverOverlaps.yLabel = overlapsY(this.refs.yLabel, pointYPosition)
 				}
 
 				if (this.refs.minYLabel) {

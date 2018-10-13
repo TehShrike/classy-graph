@@ -40,10 +40,8 @@ async function main() {
 			},
 			bottomFrame: `line`,
 			leftFrame: `ticks`,
-			xLabel: `Date`,
 			formatX: x => new Date(x).toLocaleDateString(),
-			yLabel: `Pounds`,
-			formatY: y => y.toFixed(1),
+			formatY: y => `${ y.toFixed(1) }lb`,
 		},
 	})
 }
