@@ -1,8 +1,5 @@
-- display the axis labels
 - data points should be considered hovered as soon as the cursor is within the hover size radius, not the data point radius
 	- or maybe: if no hover indicator is under the mouse cursor, but the mouse cursor is within ~10px or so of a data point, take whichever data point is closest to the cursor and consider it hovered
-- set opacities on ticks and data points
-	- make the default tick size larger
 - another example graph
 	- strength of USD/GBP/EUR over time
 	- will need to handle multiple datasets

@@ -38,7 +38,7 @@ async function main() {
 				points,
 				color: `#139090`,
 			},
-			bottomFrame: `line`,
+			bottomFrame: `ticks`,
 			leftFrame: `ticks`,
 			formatX: x => new Date(x).toLocaleDateString(),
 			formatY: y => `${ y.toFixed(1) }lb`,

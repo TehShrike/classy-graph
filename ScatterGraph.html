@@ -70,6 +70,7 @@
 				y2={calculatePlotY(point.y)}px
 				stroke={dataset.color}
 				stroke-width={tickWidth}px
+				stroke-opacity=0.4
 			/>
 		{/each}
 	{:elseif leftFrame === 'line'}
@@ -89,6 +90,7 @@
 			cy={calculatePlotY(point.y)}px
 			r={pointSize}
 			fill={dataset.color}
+			fill-opacity=0.8
 			on:mouseenter=hover(point)
 		/>
 	{/each}
@@ -102,6 +104,7 @@
 				y2={topMargin + plotYMargin + plotHeight + tickLength}px
 				stroke={dataset.color}
 				stroke-width={tickWidth}px
+				stroke-opacity=0.4
 			/>
 		{/each}
 	{:elseif bottomFrame === 'line'}
@@ -131,7 +134,7 @@
 			y1={calculatePlotY(hoveredPoint.y)}px
 			y2={calculatePlotY(hoveredPoint.y)}px
 			stroke={highlightColor}
-			stroke-width={tickWidth * 10}px
+			stroke-width={tickWidth * 2}px
 			transition:fade="{duration: 200}"
 		/>
 
@@ -141,7 +144,7 @@
 			y1={topMargin + plotYMargin + plotHeight}px
 			y2={topMargin + plotYMargin + plotHeight + tickLength}px
 			stroke={highlightColor}
-			stroke-width={tickWidth * 10}px
+			stroke-width={tickWidth * 2}px
 			transition:fade="{duration: 200}"
 		/>
 
@@ -207,7 +210,7 @@ export default {
 			leftFrame: `ticks`,
 			pointSize: 2,
 			tickLength: 10,
-			tickWidth: 0.2,
+			tickWidth: 0.8,
 			labelBuffer: 4,
 
 			dataset: {
