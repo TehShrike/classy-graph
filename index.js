@@ -3,31 +3,10 @@ import r from 'regex-fun'
 import sheetsy from 'sheetsy'
 const { getSheet } = sheetsy
 
-const documentId = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`
-const sheet1Id = `ouieeg5`
-
-const digits = /(\d+)/
-const stupidDate = r.combine(/^/, digits, `/`, digits, `/`, digits, ` `, digits, `:`, digits, `:`, digits, /$/)
-const pad2 = str => str.length === 1 ? `0` + str : str
-const parseStupidDateOrIso = dateString => {
-	const match = dateString.match(stupidDate)
-	if (match) {
-		const [ , month, day, year, hour, minute, second ] = match
-		dateString = `${ year }-${ pad2(month) }-${ pad2(day) } ${ pad2(hour) }:${ pad2(minute) }:${ pad2(second) }`
-	}
-
-	return Date.parse(dateString)
-}
-
 async function main() {
+	const points = await getWeightDataPoints()
+
 	const graphTarget = document.getElementById(`graph-target`)
-
-	const sheet = await getSheet(documentId, sheet1Id)
-
-	const points = sheet.rows.map(({ timestamp, weight }) => ({
-		x: parseStupidDateOrIso(timestamp),
-		y: parseFloat(weight),
-	}))
 
 	graphTarget.innerText = ``
 
@@ -47,3 +26,32 @@ async function main() {
 }
 
 main()
+
+async function getWeightDataPoints() {
+	const documentId = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`
+	const sheet1Id = `ouieeg5`
+
+	const digits = /(\d+)/
+	const stupidDate = r.combine(/^/, digits, `/`, digits, `/`, digits, ` `, digits, `:`, digits, `:`, digits, /$/)
+	const mostlyIsoDate = r.combine(/^/, digits, `-`, digits, `-`, digits, ` `, digits, `:`, digits, /$/)
+	const toDate = (...stringParams) => new Date(...stringParams.map(str => parseInt(str, 10))).valueOf()
+	const parseStupidDateOrIso = dateString => {
+		const match = dateString.match(stupidDate)
+		if (match) {
+			const [ , month, day, year, hour, minute, second ] = match
+			return toDate(year, month, day, hour, minute, second)
+		} else {
+			const [ , year, month, day, hour, minute ] = dateString.match(mostlyIsoDate)
+			return toDate(year, month, day, hour, minute)
+		}
+	}
+
+
+
+	const sheet = await getSheet(documentId, sheet1Id)
+
+	return sheet.rows.map(({ timestamp, weight }) => ({
+		x: parseStupidDateOrIso(timestamp),
+		y: parseFloat(weight),
+	}))
+}
