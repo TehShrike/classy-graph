@@ -4,7 +4,7 @@
 			fill={baseColor}
 			style="font-size: {fontSize}px;"
 			text-anchor=end
-			x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
+			x={ yLabelX }
 			y={ calculatePlotY(minsAndMaxes.maxY) }
 			dy=4
 			transition:fade="{duration: 200}"
@@ -18,7 +18,7 @@
 			fill={baseColor}
 			style="font-size: {fontSize}px;"
 			text-anchor=end
-			x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
+			x={ yLabelX }
 			y={ calculatePlotY(minsAndMaxes.minY) }
 			dy=4
 			transition:fade="{duration: 200}"
@@ -37,7 +37,7 @@
 			style="font-size: {fontSize}px;"
 			text-anchor=middle
 			x={ calculatePlotX(minsAndMaxes.maxX) }
-			y={ topMargin + plotHeight + plotYMargin + tickLength + labelBuffer}
+			y={ xLabelY }
 			dy={fontSize}
 			transition:fade="{duration: 200}"
 			ref:maxXLabel
@@ -51,7 +51,7 @@
 			style="font-size: {fontSize}px;"
 			text-anchor=middle
 			x={ calculatePlotX(minsAndMaxes.minX) }
-			y={ topMargin + plotYMargin + plotHeight + tickLength + labelBuffer}
+			y={ xLabelY }
 			dy={fontSize}
 			transition:fade="{duration: 200}"
 			ref:minXLabel
@@ -152,7 +152,7 @@
 			fill={highlightColor}
 			style="font-size: {fontSize}px;"
 			text-anchor=end
-			x={ leftMargin - plotXMargin - tickLength - (labelBuffer * 2)}
+			x={ yLabelX }
 			y={ calculatePlotY(hoveredPoint.y) }
 			dy=4
 			transition:fade="{duration: 200}"
@@ -164,7 +164,7 @@
 			style="font-size: {fontSize}px;"
 			text-anchor=middle
 			x={ calculatePlotX(hoveredPoint.x) }
-			y={ topMargin + plotHeight + plotYMargin + tickLength + labelBuffer}
+			y={ xLabelY }
 			dy={fontSize}
 			transition:fade="{duration: 200}"
 		>
@@ -290,6 +290,10 @@ export default {
 			x: minsAndMaxes.maxX - minsAndMaxes.minX,
 			y: minsAndMaxes.maxY - minsAndMaxes.minY,
 		}),
+		yLabelX: ({ leftMargin, plotXMargin, tickLength, labelBuffer }) =>
+			leftMargin - plotXMargin - tickLength - (labelBuffer * 2),
+		xLabelY: ({ topMargin, plotHeight, plotYMargin, tickLength, labelBuffer }) =>
+			topMargin + plotHeight + plotYMargin + tickLength + labelBuffer,
 	},
 }
 </script>
