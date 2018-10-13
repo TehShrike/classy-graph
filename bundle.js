@@ -629,6 +629,14 @@
 	};
 	}
 
+	function yLabelX({ leftMargin, plotXMargin, tickLength, labelBuffer }) {
+		return leftMargin - plotXMargin - tickLength - (labelBuffer * 2);
+	}
+
+	function xLabelY({ topMargin, plotHeight, plotYMargin, tickLength, labelBuffer }) {
+		return topMargin + plotHeight + plotYMargin + tickLength + labelBuffer;
+	}
+
 	function data() {
 		return {
 			leftMargin: 100,
@@ -951,7 +959,7 @@
 
 	// (2:1) {#if !hoverOverlaps.maxYLabel}
 	function create_if_block(component, ctx) {
-		var text, text_1_value = ctx.formatY(ctx.minsAndMaxes.maxY), text_1, text_x_value, text_y_value, text_transition, current;
+		var text, text_1_value = ctx.formatY(ctx.minsAndMaxes.maxY), text_1, text_y_value, text_transition, current;
 
 		return {
 			c() {
@@ -960,7 +968,7 @@
 				setAttribute(text, "fill", ctx.baseColor);
 				setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text, "text-anchor", "end");
-				setAttribute(text, "x", text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2));
+				setAttribute(text, "x", ctx.yLabelX);
 				setAttribute(text, "y", text_y_value = ctx.calculatePlotY(ctx.minsAndMaxes.maxY));
 				setAttribute(text, "dy", "4");
 			},
@@ -985,8 +993,8 @@
 					setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				}
 
-				if ((!current || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.labelBuffer) && text_x_value !== (text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2))) {
-					setAttribute(text, "x", text_x_value);
+				if (!current || changed.yLabelX) {
+					setAttribute(text, "x", ctx.yLabelX);
 				}
 
 				if ((!current || changed.calculatePlotY || changed.minsAndMaxes) && text_y_value !== (text_y_value = ctx.calculatePlotY(ctx.minsAndMaxes.maxY))) {
@@ -1034,7 +1042,7 @@
 
 	// (16:1) {#if !hoverOverlaps.minYLabel}
 	function create_if_block_1(component, ctx) {
-		var text, text_1_value = ctx.formatY(ctx.minsAndMaxes.minY), text_1, text_x_value, text_y_value, text_transition, current;
+		var text, text_1_value = ctx.formatY(ctx.minsAndMaxes.minY), text_1, text_y_value, text_transition, current;
 
 		return {
 			c() {
@@ -1043,7 +1051,7 @@
 				setAttribute(text, "fill", ctx.baseColor);
 				setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text, "text-anchor", "end");
-				setAttribute(text, "x", text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2));
+				setAttribute(text, "x", ctx.yLabelX);
 				setAttribute(text, "y", text_y_value = ctx.calculatePlotY(ctx.minsAndMaxes.minY));
 				setAttribute(text, "dy", "4");
 			},
@@ -1068,8 +1076,8 @@
 					setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				}
 
-				if ((!current || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.labelBuffer) && text_x_value !== (text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2))) {
-					setAttribute(text, "x", text_x_value);
+				if (!current || changed.yLabelX) {
+					setAttribute(text, "x", ctx.yLabelX);
 				}
 
 				if ((!current || changed.calculatePlotY || changed.minsAndMaxes) && text_y_value !== (text_y_value = ctx.calculatePlotY(ctx.minsAndMaxes.minY))) {
@@ -1117,7 +1125,7 @@
 
 	// (34:1) {#if !hoverOverlaps.maxXLabel}
 	function create_if_block_2(component, ctx) {
-		var text, text_1_value = ctx.formatX(ctx.minsAndMaxes.maxX), text_1, text_x_value, text_y_value, text_transition, current;
+		var text, text_1_value = ctx.formatX(ctx.minsAndMaxes.maxX), text_1, text_x_value, text_transition, current;
 
 		return {
 			c() {
@@ -1127,7 +1135,7 @@
 				setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text, "text-anchor", "middle");
 				setAttribute(text, "x", text_x_value = ctx.calculatePlotX(ctx.minsAndMaxes.maxX));
-				setAttribute(text, "y", text_y_value = ctx.topMargin + ctx.plotHeight + ctx.plotYMargin + ctx.tickLength + ctx.labelBuffer);
+				setAttribute(text, "y", ctx.xLabelY);
 				setAttribute(text, "dy", ctx.fontSize);
 			},
 
@@ -1155,8 +1163,8 @@
 					setAttribute(text, "x", text_x_value);
 				}
 
-				if ((!current || changed.topMargin || changed.plotHeight || changed.plotYMargin || changed.tickLength || changed.labelBuffer) && text_y_value !== (text_y_value = ctx.topMargin + ctx.plotHeight + ctx.plotYMargin + ctx.tickLength + ctx.labelBuffer)) {
-					setAttribute(text, "y", text_y_value);
+				if (!current || changed.xLabelY) {
+					setAttribute(text, "y", ctx.xLabelY);
 				}
 
 				if (!current || changed.fontSize) {
@@ -1204,7 +1212,7 @@
 
 	// (48:1) {#if !hoverOverlaps.minXLabel}
 	function create_if_block_3(component, ctx) {
-		var text, text_1_value = ctx.formatX(ctx.minsAndMaxes.minX), text_1, text_x_value, text_y_value, text_transition, current;
+		var text, text_1_value = ctx.formatX(ctx.minsAndMaxes.minX), text_1, text_x_value, text_transition, current;
 
 		return {
 			c() {
@@ -1214,7 +1222,7 @@
 				setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text, "text-anchor", "middle");
 				setAttribute(text, "x", text_x_value = ctx.calculatePlotX(ctx.minsAndMaxes.minX));
-				setAttribute(text, "y", text_y_value = ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength + ctx.labelBuffer);
+				setAttribute(text, "y", ctx.xLabelY);
 				setAttribute(text, "dy", ctx.fontSize);
 			},
 
@@ -1242,8 +1250,8 @@
 					setAttribute(text, "x", text_x_value);
 				}
 
-				if ((!current || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.labelBuffer) && text_y_value !== (text_y_value = ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength + ctx.labelBuffer)) {
-					setAttribute(text, "y", text_y_value);
+				if (!current || changed.xLabelY) {
+					setAttribute(text, "y", ctx.xLabelY);
 				}
 
 				if (!current || changed.fontSize) {
@@ -1672,7 +1680,7 @@
 
 	// (121:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
 	function create_each_block_3(component, key_1, ctx) {
-		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_transition, line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_x_value, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_x_value, text_2_y_value, text_2_transition, current;
+		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_transition, line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_x_value, text_2_transition, current;
 
 		return {
 			key: key_1,
@@ -1709,14 +1717,14 @@
 				setAttribute(text, "fill", ctx.highlightColor);
 				setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text, "text-anchor", "end");
-				setAttribute(text, "x", text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2));
+				setAttribute(text, "x", ctx.yLabelX);
 				setAttribute(text, "y", text_y_value = ctx.calculatePlotY(ctx.hoveredPoint.y));
 				setAttribute(text, "dy", "4");
 				setAttribute(text_2, "fill", ctx.highlightColor);
 				setStyle(text_2, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text_2, "text-anchor", "middle");
 				setAttribute(text_2, "x", text_2_x_value = ctx.calculatePlotX(ctx.hoveredPoint.x));
-				setAttribute(text_2, "y", text_2_y_value = ctx.topMargin + ctx.plotHeight + ctx.plotYMargin + ctx.tickLength + ctx.labelBuffer);
+				setAttribute(text_2, "y", ctx.xLabelY);
 				setAttribute(text_2, "dy", ctx.fontSize);
 				this.first = circle;
 			},
@@ -1809,8 +1817,8 @@
 					setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				}
 
-				if ((!current || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.labelBuffer) && text_x_value !== (text_x_value = ctx.leftMargin - ctx.plotXMargin - ctx.tickLength - (ctx.labelBuffer * 2))) {
-					setAttribute(text, "x", text_x_value);
+				if (!current || changed.yLabelX) {
+					setAttribute(text, "x", ctx.yLabelX);
 				}
 
 				if ((!current || changed.calculatePlotY || changed.hoveredPoints) && text_y_value !== (text_y_value = ctx.calculatePlotY(ctx.hoveredPoint.y))) {
@@ -1833,8 +1841,8 @@
 					setAttribute(text_2, "x", text_2_x_value);
 				}
 
-				if ((!current || changed.topMargin || changed.plotHeight || changed.plotYMargin || changed.tickLength || changed.labelBuffer) && text_2_y_value !== (text_2_y_value = ctx.topMargin + ctx.plotHeight + ctx.plotYMargin + ctx.tickLength + ctx.labelBuffer)) {
-					setAttribute(text_2, "y", text_2_y_value);
+				if (!current || changed.xLabelY) {
+					setAttribute(text_2, "y", ctx.xLabelY);
 				}
 
 				if (!current || changed.fontSize) {
@@ -1986,7 +1994,7 @@
 		init(this, options);
 		this.refs = {};
 		this._state = assign(data(), options.data);
-		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, dataset: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1 }, this._state);
+		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, dataset: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1, plotXMargin: 1, tickLength: 1, labelBuffer: 1, plotYMargin: 1 }, this._state);
 		this._intro = true;
 
 		this._fragment = create_main_fragment(this, this._state);
@@ -2025,6 +2033,14 @@
 
 		if (changed.plotHeight || changed.minsAndMaxes || changed.dataRanges || changed.topMargin) {
 			if (this._differs(state.calculatePlotY, (state.calculatePlotY = calculatePlotY(state)))) changed.calculatePlotY = true;
+		}
+
+		if (changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.labelBuffer) {
+			if (this._differs(state.yLabelX, (state.yLabelX = yLabelX(state)))) changed.yLabelX = true;
+		}
+
+		if (changed.topMargin || changed.plotHeight || changed.plotYMargin || changed.tickLength || changed.labelBuffer) {
+			if (this._differs(state.xLabelY, (state.xLabelY = xLabelY(state)))) changed.xLabelY = true;
 		}
 	};
 
