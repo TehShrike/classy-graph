@@ -176,6 +176,18 @@ const min = (maybeNull, number) => maybeNull === null ? number : Math.min(maybeN
 
 const identity = value => value
 
+const overlapsY = (svgElement, y) => {
+	const labelBox = svgElement.getBBox()
+	return (labelBox.y + (labelBox.height * 1.5)) >= y
+		&& (labelBox.y - (labelBox.height * 0.5)) <= y
+}
+const overlapsX = (svgElement, x) => {
+	const labelBox = svgElement.getBBox()
+	return (labelBox.x - (labelBox.width * 0.5)) <= x
+		&& (labelBox.x + (labelBox.width * 1.5)) >= x
+}
+
+
 export default {
 	data() {
 		return {
@@ -221,29 +233,25 @@ export default {
 				const pointYPosition = calculatePlotY(hoveredPoint.y)
 
 				if (this.refs.maxYLabel) {
-					const maxYLabelBox = this.refs.maxYLabel.getBBox()
+					hoverOverlaps.maxYLabel = overlapsY(this.refs.maxYLabel, pointYPosition)
+				}
 
-					hoverOverlaps.maxYLabel = (maxYLabelBox.y + (maxYLabelBox.height * 1.5)) >= pointYPosition
+				if (this.refs.yLabel) {
+					hoverOverlaps.yLabel = overlapsY(this.refs.yLabel, pointYPosition)
 				}
 
 				if (this.refs.minYLabel) {
-					const minYLabelBox = this.refs.minYLabel.getBBox()
-
-					hoverOverlaps.minYLabel = (minYLabelBox.y - (minYLabelBox.height * 0.5)) <= pointYPosition
+					hoverOverlaps.minYLabel = overlapsY(this.refs.minYLabel, pointYPosition)
 				}
 
 				const pointXPosition = calculatePlotX(hoveredPoint.x)
 
 				if (this.refs.maxXLabel) {
-					const maxXLabelBox = this.refs.maxXLabel.getBBox()
-
-					hoverOverlaps.maxXLabel = (maxXLabelBox.x - (maxXLabelBox.width * 0.5)) <= pointXPosition
+					hoverOverlaps.maxXLabel = overlapsX(this.refs.maxXLabel, pointXPosition)
 				}
 
 				if (this.refs.minXLabel) {
-					const minXLabelBox = this.refs.minXLabel.getBBox()
-
-					hoverOverlaps.minXLabel = (minXLabelBox.x + (minXLabelBox.width * 1.5)) >= pointXPosition
+					hoverOverlaps.minXLabel = overlapsX(this.refs.minXLabel, pointXPosition)
 				}
 			}
 
