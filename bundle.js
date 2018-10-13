@@ -577,6 +577,18 @@
 
 	const identity = value => value;
 
+	const overlapsY = (svgElement, y) => {
+		const labelBox = svgElement.getBBox();
+		return (labelBox.y + (labelBox.height * 1.5)) >= y
+			&& (labelBox.y - (labelBox.height * 0.5)) <= y
+	};
+	const overlapsX = (svgElement, x) => {
+		const labelBox = svgElement.getBBox();
+		return (labelBox.x - (labelBox.width * 0.5)) <= x
+			&& (labelBox.x + (labelBox.width * 1.5)) >= x
+	};
+
+
 	function plotWidth({ width, leftMargin, rightMargin }) {
 		return width - leftMargin - rightMargin;
 	}
@@ -631,7 +643,7 @@
 			leftFrame: `ticks`,
 			pointSize: 2,
 			tickLength: 10,
-			tickWidth: 0.2,
+			tickWidth: 0.8,
 			labelBuffer: 4,
 
 			dataset: {
@@ -661,29 +673,21 @@
 				const pointYPosition = calculatePlotY(hoveredPoint.y);
 
 				if (this.refs.maxYLabel) {
-					const maxYLabelBox = this.refs.maxYLabel.getBBox();
-
-					hoverOverlaps.maxYLabel = (maxYLabelBox.y + (maxYLabelBox.height * 1.5)) >= pointYPosition;
+					hoverOverlaps.maxYLabel = overlapsY(this.refs.maxYLabel, pointYPosition);
 				}
 
 				if (this.refs.minYLabel) {
-					const minYLabelBox = this.refs.minYLabel.getBBox();
-
-					hoverOverlaps.minYLabel = (minYLabelBox.y - (minYLabelBox.height * 0.5)) <= pointYPosition;
+					hoverOverlaps.minYLabel = overlapsY(this.refs.minYLabel, pointYPosition);
 				}
 
 				const pointXPosition = calculatePlotX(hoveredPoint.x);
 
 				if (this.refs.maxXLabel) {
-					const maxXLabelBox = this.refs.maxXLabel.getBBox();
-
-					hoverOverlaps.maxXLabel = (maxXLabelBox.x - (maxXLabelBox.width * 0.5)) <= pointXPosition;
+					hoverOverlaps.maxXLabel = overlapsX(this.refs.maxXLabel, pointXPosition);
 				}
 
 				if (this.refs.minXLabel) {
-					const minXLabelBox = this.refs.minXLabel.getBBox();
-
-					hoverOverlaps.minXLabel = (minXLabelBox.x + (minXLabelBox.width * 1.5)) >= pointXPosition;
+					hoverOverlaps.minXLabel = overlapsX(this.refs.minXLabel, pointXPosition);
 				}
 			}
 
@@ -1111,7 +1115,7 @@
 		};
 	}
 
-	// (30:1) {#if !hoverOverlaps.maxXLabel}
+	// (34:1) {#if !hoverOverlaps.maxXLabel}
 	function create_if_block_2(component, ctx) {
 		var text, text_1_value = ctx.formatX(ctx.minsAndMaxes.maxX), text_1, text_x_value, text_y_value, text_transition, current;
 
@@ -1198,7 +1202,7 @@
 		};
 	}
 
-	// (44:1) {#if !hoverOverlaps.minXLabel}
+	// (48:1) {#if !hoverOverlaps.minXLabel}
 	function create_if_block_3(component, ctx) {
 		var text, text_1_value = ctx.formatX(ctx.minsAndMaxes.minX), text_1, text_x_value, text_y_value, text_transition, current;
 
@@ -1285,7 +1289,7 @@
 		};
 	}
 
-	// (61:2) {#each dataset.points as point}
+	// (65:2) {#each dataset.points as point}
 	function create_each_block(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
 
@@ -1298,6 +1302,7 @@
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.point.y) + "px");
 				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
 				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
+				setAttribute(line, "stroke-opacity", "0.4");
 			},
 
 			m(target, anchor) {
@@ -1338,7 +1343,7 @@
 		};
 	}
 
-	// (60:1) {#if leftFrame === 'ticks'}
+	// (64:1) {#if leftFrame === 'ticks'}
 	function create_if_block_4(component, ctx) {
 		var each_anchor;
 
@@ -1400,7 +1405,7 @@
 		};
 	}
 
-	// (71:31) 
+	// (76:31) 
 	function create_if_block_5(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
@@ -1449,7 +1454,7 @@
 		};
 	}
 
-	// (82:1) {#each dataset.points as point}
+	// (87:1) {#each dataset.points as point}
 	function create_each_block_1(component, ctx) {
 		var circle, circle_cx_value, circle_cy_value, circle_fill_value;
 
@@ -1463,6 +1468,7 @@
 				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
 				setAttribute(circle, "r", ctx.pointSize);
 				setAttribute(circle, "fill", circle_fill_value = ctx.dataset.color);
+				setAttribute(circle, "fill-opacity", "0.8");
 			},
 
 			m(target, anchor) {
@@ -1499,7 +1505,7 @@
 		};
 	}
 
-	// (93:2) {#each dataset.points as point}
+	// (99:2) {#each dataset.points as point}
 	function create_each_block_2(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
 
@@ -1512,6 +1518,7 @@
 				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
 				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
 				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
+				setAttribute(line, "stroke-opacity", "0.4");
 			},
 
 			m(target, anchor) {
@@ -1552,7 +1559,7 @@
 		};
 	}
 
-	// (92:1) {#if bottomFrame === 'ticks'}
+	// (98:1) {#if bottomFrame === 'ticks'}
 	function create_if_block_6(component, ctx) {
 		var each_anchor;
 
@@ -1614,7 +1621,7 @@
 		};
 	}
 
-	// (103:33) 
+	// (110:33) 
 	function create_if_block_7(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
@@ -1663,7 +1670,7 @@
 		};
 	}
 
-	// (114:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
+	// (121:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
 	function create_each_block_3(component, key_1, ctx) {
 		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_transition, line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_x_value, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_x_value, text_2_y_value, text_2_transition, current;
 
@@ -1692,13 +1699,13 @@
 				setAttribute(line, "y1", line_y__value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
 				setAttribute(line, "stroke", ctx.highlightColor);
-				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth * 10 + "px");
+				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth * 2 + "px");
 				setAttribute(line_1, "x1", line_1_x__value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
 				setAttribute(line_1, "x2", line_1_x__value_1 = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
 				setAttribute(line_1, "y1", line_1_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
 				setAttribute(line_1, "y2", line_1_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
 				setAttribute(line_1, "stroke", ctx.highlightColor);
-				setAttribute(line_1, "stroke-width", line_1_stroke_width_value = "" + ctx.tickWidth * 10 + "px");
+				setAttribute(line_1, "stroke-width", line_1_stroke_width_value = "" + ctx.tickWidth * 2 + "px");
 				setAttribute(text, "fill", ctx.highlightColor);
 				setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text, "text-anchor", "end");
@@ -1762,7 +1769,7 @@
 					setAttribute(line, "stroke", ctx.highlightColor);
 				}
 
-				if ((!current || changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth * 10 + "px")) {
+				if ((!current || changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth * 2 + "px")) {
 					setAttribute(line, "stroke-width", line_stroke_width_value);
 				}
 
@@ -1786,7 +1793,7 @@
 					setAttribute(line_1, "stroke", ctx.highlightColor);
 				}
 
-				if ((!current || changed.tickWidth) && line_1_stroke_width_value !== (line_1_stroke_width_value = "" + ctx.tickWidth * 10 + "px")) {
+				if ((!current || changed.tickWidth) && line_1_stroke_width_value !== (line_1_stroke_width_value = "" + ctx.tickWidth * 2 + "px")) {
 					setAttribute(line_1, "stroke-width", line_1_stroke_width_value);
 				}
 
@@ -2409,12 +2416,10 @@
 					points,
 					color: `#139090`,
 				},
-				bottomFrame: `line`,
+				bottomFrame: `ticks`,
 				leftFrame: `ticks`,
-				xLabel: `Date`,
 				formatX: x => new Date(x).toLocaleDateString(),
-				yLabel: `Pounds`,
-				formatY: y => y.toFixed(1),
+				formatY: y => `${ y.toFixed(1) }lb`,
 			},
 		});
 	}
