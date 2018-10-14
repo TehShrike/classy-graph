@@ -576,6 +576,7 @@
 	const min = (maybeNull, number) => maybeNull === null ? number : Math.min(maybeNull, number);
 
 	const identity = value => value;
+	const flatten = ary => [].concat(...ary);
 
 	const overlapsY = (svgElement, y) => {
 		const labelBox = svgElement.getBBox();
@@ -613,13 +614,17 @@
 	};
 	}
 
-	function minsAndMaxes({ dataset }) {
-		return dataset.points.reduce(({ minX, maxX, minY, maxY }, { x, y }) => ({
-		minX: min(minX, x),
-		maxX: max(maxX, x),
-		minY: min(minY, y),
-		maxY: max(maxY, y),
-	}), { minX: null, maxX: null, minY: null, maxY: null });
+	function minsAndMaxes({ datasets }) {
+		return flatten(
+		datasets.map(({ points }) => points)
+	).reduce(
+		({ minX, maxX, minY, maxY }, { x, y }) => ({
+			minX: min(minX, x),
+			maxX: max(maxX, x),
+			minY: min(minY, y),
+			maxY: max(maxY, y),
+		}), { minX: null, maxX: null, minY: null, maxY: null }
+	);
 	}
 
 	function dataRanges({ minsAndMaxes }) {
@@ -654,10 +659,10 @@
 			tickWidth: 0.8,
 			labelBuffer: 4,
 
-			dataset: {
+			datasets: [{
 				points: [],
 				color: `black`,
-			},
+			}],
 			formatX: identity,
 			formatY: identity,
 			plotYMargin: 20,
@@ -726,12 +731,12 @@
 		var current_block_type = select_block_type(ctx);
 		var if_block_4 = current_block_type && current_block_type(component, ctx);
 
-		var each_value_1 = ctx.dataset.points;
+		var each_value_2 = ctx.datasets;
 
 		var each_blocks = [];
 
-		for (var i = 0; i < each_value_1.length; i += 1) {
-			each_blocks[i] = create_each_block_1(component, get_each_context_1(ctx, each_value_1, i));
+		for (var i = 0; i < each_value_2.length; i += 1) {
+			each_blocks[i] = create_each_block_2(component, get_each_context_2(ctx, each_value_2, i));
 		}
 
 		function select_block_type_1(ctx) {
@@ -743,14 +748,14 @@
 		var current_block_type_1 = select_block_type_1(ctx);
 		var if_block_6 = current_block_type_1 && current_block_type_1(component, ctx);
 
-		var each_value_3 = ctx.hoveredPoints;
+		var each_value_6 = ctx.hoveredPoints;
 
 		const get_key = ctx => (ctx.hoveredPoint.x / ctx.minsAndMaxes.maxX) + (ctx.hoveredPoint.y / ctx.minsAndMaxes.maxY);
 
-		for (var i = 0; i < each_value_3.length; i += 1) {
-			let child_ctx = get_each_1_context(ctx, each_value_3, i);
+		for (var i = 0; i < each_value_6.length; i += 1) {
+			let child_ctx = get_each_1_context(ctx, each_value_6, i);
 			let key = get_key(child_ctx);
-			each_1_blocks_1[i] = each_1_lookup[key] = create_each_block_3(component, key, child_ctx);
+			each_1_blocks_1[i] = each_1_lookup[key] = create_each_block_6(component, key, child_ctx);
 		}
 
 		return {
@@ -885,16 +890,16 @@
 					if (if_block_4) if_block_4.m(svg, if_block_4_anchor);
 				}
 
-				if (changed.calculatePlotX || changed.dataset || changed.calculatePlotY || changed.pointSize) {
-					each_value_1 = ctx.dataset.points;
+				if (changed.datasets || changed.calculatePlotX || changed.calculatePlotY || changed.pointSize) {
+					each_value_2 = ctx.datasets;
 
-					for (var i = 0; i < each_value_1.length; i += 1) {
-						const child_ctx = get_each_context_1(ctx, each_value_1, i);
+					for (var i = 0; i < each_value_2.length; i += 1) {
+						const child_ctx = get_each_context_2(ctx, each_value_2, i);
 
 						if (each_blocks[i]) {
 							each_blocks[i].p(changed, child_ctx);
 						} else {
-							each_blocks[i] = create_each_block_1(component, child_ctx);
+							each_blocks[i] = create_each_block_2(component, child_ctx);
 							each_blocks[i].c();
 							each_blocks[i].m(svg, each_anchor);
 						}
@@ -903,7 +908,7 @@
 					for (; i < each_blocks.length; i += 1) {
 						each_blocks[i].d(1);
 					}
-					each_blocks.length = each_value_1.length;
+					each_blocks.length = each_value_2.length;
 				}
 
 				if (current_block_type_1 === (current_block_type_1 = select_block_type_1(ctx)) && if_block_6) {
@@ -915,10 +920,10 @@
 					if (if_block_6) if_block_6.m(svg, if_block_6_anchor);
 				}
 
-				const each_value_3 = ctx.hoveredPoints;
+				const each_value_6 = ctx.hoveredPoints;
 
 				groupOutros();
-				each_1_blocks_1 = updateKeyedEach(each_1_blocks_1, component, changed, get_key, 1, ctx, each_value_3, each_1_lookup, svg, outroAndDestroyBlock, create_each_block_3, "i", null, get_each_1_context);
+				each_1_blocks_1 = updateKeyedEach(each_1_blocks_1, component, changed, get_key, 1, ctx, each_value_6, each_1_lookup, svg, outroAndDestroyBlock, create_each_block_6, "i", null, get_each_1_context);
 
 				if ((!current || changed.height) && svg_height_value !== (svg_height_value = "" + ctx.height + "px")) {
 					setAttribute(svg, "height", svg_height_value);
@@ -1297,8 +1302,70 @@
 		};
 	}
 
-	// (65:2) {#each dataset.points as point}
+	// (65:2) {#each datasets as dataset}
 	function create_each_block(component, ctx) {
+		var each_anchor;
+
+		var each_value_1 = ctx.dataset.points;
+
+		var each_blocks = [];
+
+		for (var i = 0; i < each_value_1.length; i += 1) {
+			each_blocks[i] = create_each_block_1(component, get_each_context_1(ctx, each_value_1, i));
+		}
+
+		return {
+			c() {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].c();
+				}
+
+				each_anchor = createComment();
+			},
+
+			m(target, anchor) {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(target, anchor);
+				}
+
+				insert(target, each_anchor, anchor);
+			},
+
+			p(changed, ctx) {
+				if (changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.datasets || changed.tickWidth) {
+					each_value_1 = ctx.dataset.points;
+
+					for (var i = 0; i < each_value_1.length; i += 1) {
+						const child_ctx = get_each_context_1(ctx, each_value_1, i);
+
+						if (each_blocks[i]) {
+							each_blocks[i].p(changed, child_ctx);
+						} else {
+							each_blocks[i] = create_each_block_1(component, child_ctx);
+							each_blocks[i].c();
+							each_blocks[i].m(each_anchor.parentNode, each_anchor);
+						}
+					}
+
+					for (; i < each_blocks.length; i += 1) {
+						each_blocks[i].d(1);
+					}
+					each_blocks.length = each_value_1.length;
+				}
+			},
+
+			d(detach) {
+				destroyEach(each_blocks, detach);
+
+				if (detach) {
+					detachNode(each_anchor);
+				}
+			}
+		};
+	}
+
+	// (66:3) {#each dataset.points as point}
+	function create_each_block_1(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
 
 		return {
@@ -1326,15 +1393,15 @@
 					setAttribute(line, "x2", line_x__value_1);
 				}
 
-				if ((changed.calculatePlotY || changed.dataset) && line_y__value !== (line_y__value = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
+				if ((changed.calculatePlotY || changed.datasets) && line_y__value !== (line_y__value = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
 					setAttribute(line, "y1", line_y__value);
 				}
 
-				if ((changed.calculatePlotY || changed.dataset) && line_y__value_1 !== (line_y__value_1 = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
+				if ((changed.calculatePlotY || changed.datasets) && line_y__value_1 !== (line_y__value_1 = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
 					setAttribute(line, "y2", line_y__value_1);
 				}
 
-				if ((changed.dataset) && line_stroke_value !== (line_stroke_value = ctx.dataset.color)) {
+				if ((changed.datasets) && line_stroke_value !== (line_stroke_value = ctx.dataset.color)) {
 					setAttribute(line, "stroke", line_stroke_value);
 				}
 
@@ -1355,7 +1422,7 @@
 	function create_if_block_4(component, ctx) {
 		var each_anchor;
 
-		var each_value = ctx.dataset.points;
+		var each_value = ctx.datasets;
 
 		var each_blocks = [];
 
@@ -1381,8 +1448,8 @@
 			},
 
 			p(changed, ctx) {
-				if (changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.dataset || changed.tickWidth) {
-					each_value = ctx.dataset.points;
+				if (changed.datasets || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.tickWidth) {
+					each_value = ctx.datasets;
 
 					for (var i = 0; i < each_value.length; i += 1) {
 						const child_ctx = get_each_context(ctx, each_value, i);
@@ -1413,7 +1480,7 @@
 		};
 	}
 
-	// (76:31) 
+	// (78:31) 
 	function create_if_block_5(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
@@ -1462,8 +1529,70 @@
 		};
 	}
 
-	// (87:1) {#each dataset.points as point}
-	function create_each_block_1(component, ctx) {
+	// (89:1) {#each datasets as dataset}
+	function create_each_block_2(component, ctx) {
+		var each_anchor;
+
+		var each_value_3 = ctx.dataset.points;
+
+		var each_blocks = [];
+
+		for (var i = 0; i < each_value_3.length; i += 1) {
+			each_blocks[i] = create_each_block_3(component, get_each_context_3(ctx, each_value_3, i));
+		}
+
+		return {
+			c() {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].c();
+				}
+
+				each_anchor = createComment();
+			},
+
+			m(target, anchor) {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(target, anchor);
+				}
+
+				insert(target, each_anchor, anchor);
+			},
+
+			p(changed, ctx) {
+				if (changed.calculatePlotX || changed.datasets || changed.calculatePlotY || changed.pointSize) {
+					each_value_3 = ctx.dataset.points;
+
+					for (var i = 0; i < each_value_3.length; i += 1) {
+						const child_ctx = get_each_context_3(ctx, each_value_3, i);
+
+						if (each_blocks[i]) {
+							each_blocks[i].p(changed, child_ctx);
+						} else {
+							each_blocks[i] = create_each_block_3(component, child_ctx);
+							each_blocks[i].c();
+							each_blocks[i].m(each_anchor.parentNode, each_anchor);
+						}
+					}
+
+					for (; i < each_blocks.length; i += 1) {
+						each_blocks[i].d(1);
+					}
+					each_blocks.length = each_value_3.length;
+				}
+			},
+
+			d(detach) {
+				destroyEach(each_blocks, detach);
+
+				if (detach) {
+					detachNode(each_anchor);
+				}
+			}
+		};
+	}
+
+	// (90:2) {#each dataset.points as point}
+	function create_each_block_3(component, ctx) {
 		var circle, circle_cx_value, circle_cy_value, circle_fill_value;
 
 		return {
@@ -1486,11 +1615,11 @@
 			p(changed, _ctx) {
 				ctx = _ctx;
 				circle._svelte.ctx = ctx;
-				if ((changed.calculatePlotX || changed.dataset) && circle_cx_value !== (circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
+				if ((changed.calculatePlotX || changed.datasets) && circle_cx_value !== (circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
 					setAttribute(circle, "cx", circle_cx_value);
 				}
 
-				if ((changed.calculatePlotY || changed.dataset) && circle_cy_value !== (circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
+				if ((changed.calculatePlotY || changed.datasets) && circle_cy_value !== (circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
 					setAttribute(circle, "cy", circle_cy_value);
 				}
 
@@ -1498,7 +1627,7 @@
 					setAttribute(circle, "r", ctx.pointSize);
 				}
 
-				if ((changed.dataset) && circle_fill_value !== (circle_fill_value = ctx.dataset.color)) {
+				if ((changed.datasets) && circle_fill_value !== (circle_fill_value = ctx.dataset.color)) {
 					setAttribute(circle, "fill", circle_fill_value);
 				}
 			},
@@ -1513,70 +1642,16 @@
 		};
 	}
 
-	// (99:2) {#each dataset.points as point}
-	function create_each_block_2(component, ctx) {
-		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
-
-		return {
-			c() {
-				line = createSvgElement("line");
-				setAttribute(line, "x1", line_x__value = "" + ctx.calculatePlotX(ctx.point.x) + "px");
-				setAttribute(line, "x2", line_x__value_1 = "" + ctx.calculatePlotX(ctx.point.x) + "px");
-				setAttribute(line, "y1", line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
-				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
-				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
-				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
-				setAttribute(line, "stroke-opacity", "0.4");
-			},
-
-			m(target, anchor) {
-				insert(target, line, anchor);
-			},
-
-			p(changed, ctx) {
-				if ((changed.calculatePlotX || changed.dataset) && line_x__value !== (line_x__value = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
-					setAttribute(line, "x1", line_x__value);
-				}
-
-				if ((changed.calculatePlotX || changed.dataset) && line_x__value_1 !== (line_x__value_1 = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
-					setAttribute(line, "x2", line_x__value_1);
-				}
-
-				if ((changed.topMargin || changed.plotYMargin || changed.plotHeight) && line_y__value !== (line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px")) {
-					setAttribute(line, "y1", line_y__value);
-				}
-
-				if ((changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength) && line_y__value_1 !== (line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px")) {
-					setAttribute(line, "y2", line_y__value_1);
-				}
-
-				if ((changed.dataset) && line_stroke_value !== (line_stroke_value = ctx.dataset.color)) {
-					setAttribute(line, "stroke", line_stroke_value);
-				}
-
-				if ((changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth + "px")) {
-					setAttribute(line, "stroke-width", line_stroke_width_value);
-				}
-			},
-
-			d(detach) {
-				if (detach) {
-					detachNode(line);
-				}
-			}
-		};
-	}
-
-	// (98:1) {#if bottomFrame === 'ticks'}
-	function create_if_block_6(component, ctx) {
+	// (103:2) {#each datasets as dataset}
+	function create_each_block_4(component, ctx) {
 		var each_anchor;
 
-		var each_value_2 = ctx.dataset.points;
+		var each_value_5 = ctx.dataset.points;
 
 		var each_blocks = [];
 
-		for (var i = 0; i < each_value_2.length; i += 1) {
-			each_blocks[i] = create_each_block_2(component, get_each_context_2(ctx, each_value_2, i));
+		for (var i = 0; i < each_value_5.length; i += 1) {
+			each_blocks[i] = create_each_block_5(component, get_each_context_5(ctx, each_value_5, i));
 		}
 
 		return {
@@ -1597,16 +1672,16 @@
 			},
 
 			p(changed, ctx) {
-				if (changed.calculatePlotX || changed.dataset || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth) {
-					each_value_2 = ctx.dataset.points;
+				if (changed.calculatePlotX || changed.datasets || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth) {
+					each_value_5 = ctx.dataset.points;
 
-					for (var i = 0; i < each_value_2.length; i += 1) {
-						const child_ctx = get_each_context_2(ctx, each_value_2, i);
+					for (var i = 0; i < each_value_5.length; i += 1) {
+						const child_ctx = get_each_context_5(ctx, each_value_5, i);
 
 						if (each_blocks[i]) {
 							each_blocks[i].p(changed, child_ctx);
 						} else {
-							each_blocks[i] = create_each_block_2(component, child_ctx);
+							each_blocks[i] = create_each_block_5(component, child_ctx);
 							each_blocks[i].c();
 							each_blocks[i].m(each_anchor.parentNode, each_anchor);
 						}
@@ -1615,7 +1690,7 @@
 					for (; i < each_blocks.length; i += 1) {
 						each_blocks[i].d(1);
 					}
-					each_blocks.length = each_value_2.length;
+					each_blocks.length = each_value_5.length;
 				}
 			},
 
@@ -1629,7 +1704,123 @@
 		};
 	}
 
-	// (110:33) 
+	// (104:3) {#each dataset.points as point}
+	function create_each_block_5(component, ctx) {
+		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
+
+		return {
+			c() {
+				line = createSvgElement("line");
+				setAttribute(line, "x1", line_x__value = "" + ctx.calculatePlotX(ctx.point.x) + "px");
+				setAttribute(line, "x2", line_x__value_1 = "" + ctx.calculatePlotX(ctx.point.x) + "px");
+				setAttribute(line, "y1", line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
+				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
+				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
+				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
+				setAttribute(line, "stroke-opacity", "0.4");
+			},
+
+			m(target, anchor) {
+				insert(target, line, anchor);
+			},
+
+			p(changed, ctx) {
+				if ((changed.calculatePlotX || changed.datasets) && line_x__value !== (line_x__value = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
+					setAttribute(line, "x1", line_x__value);
+				}
+
+				if ((changed.calculatePlotX || changed.datasets) && line_x__value_1 !== (line_x__value_1 = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
+					setAttribute(line, "x2", line_x__value_1);
+				}
+
+				if ((changed.topMargin || changed.plotYMargin || changed.plotHeight) && line_y__value !== (line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px")) {
+					setAttribute(line, "y1", line_y__value);
+				}
+
+				if ((changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength) && line_y__value_1 !== (line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px")) {
+					setAttribute(line, "y2", line_y__value_1);
+				}
+
+				if ((changed.datasets) && line_stroke_value !== (line_stroke_value = ctx.dataset.color)) {
+					setAttribute(line, "stroke", line_stroke_value);
+				}
+
+				if ((changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth + "px")) {
+					setAttribute(line, "stroke-width", line_stroke_width_value);
+				}
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(line);
+				}
+			}
+		};
+	}
+
+	// (102:1) {#if bottomFrame === 'ticks'}
+	function create_if_block_6(component, ctx) {
+		var each_anchor;
+
+		var each_value_4 = ctx.datasets;
+
+		var each_blocks = [];
+
+		for (var i = 0; i < each_value_4.length; i += 1) {
+			each_blocks[i] = create_each_block_4(component, get_each_context_4(ctx, each_value_4, i));
+		}
+
+		return {
+			c() {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].c();
+				}
+
+				each_anchor = createComment();
+			},
+
+			m(target, anchor) {
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(target, anchor);
+				}
+
+				insert(target, each_anchor, anchor);
+			},
+
+			p(changed, ctx) {
+				if (changed.datasets || changed.calculatePlotX || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth) {
+					each_value_4 = ctx.datasets;
+
+					for (var i = 0; i < each_value_4.length; i += 1) {
+						const child_ctx = get_each_context_4(ctx, each_value_4, i);
+
+						if (each_blocks[i]) {
+							each_blocks[i].p(changed, child_ctx);
+						} else {
+							each_blocks[i] = create_each_block_4(component, child_ctx);
+							each_blocks[i].c();
+							each_blocks[i].m(each_anchor.parentNode, each_anchor);
+						}
+					}
+
+					for (; i < each_blocks.length; i += 1) {
+						each_blocks[i].d(1);
+					}
+					each_blocks.length = each_value_4.length;
+				}
+			},
+
+			d(detach) {
+				destroyEach(each_blocks, detach);
+
+				if (detach) {
+					detachNode(each_anchor);
+				}
+			}
+		};
+	}
+
+	// (116:33) 
 	function create_if_block_7(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
@@ -1678,8 +1869,8 @@
 		};
 	}
 
-	// (121:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
-	function create_each_block_3(component, key_1, ctx) {
+	// (127:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
+	function create_each_block_6(component, key_1, ctx) {
 		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_transition, line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_x_value, text_2_transition, current;
 
 		return {
@@ -1948,9 +2139,9 @@
 
 	function get_each_context(ctx, list, i) {
 		const child_ctx = Object.create(ctx);
-		child_ctx.point = list[i];
+		child_ctx.dataset = list[i];
 		child_ctx.each_value = list;
-		child_ctx.point_index = i;
+		child_ctx.dataset_index = i;
 		return child_ctx;
 	}
 
@@ -1958,6 +2149,22 @@
 		const child_ctx = Object.create(ctx);
 		child_ctx.point = list[i];
 		child_ctx.each_value_1 = list;
+		child_ctx.point_index = i;
+		return child_ctx;
+	}
+
+	function get_each_context_2(ctx, list, i) {
+		const child_ctx = Object.create(ctx);
+		child_ctx.dataset = list[i];
+		child_ctx.each_value_2 = list;
+		child_ctx.dataset_index_1 = i;
+		return child_ctx;
+	}
+
+	function get_each_context_3(ctx, list, i) {
+		const child_ctx = Object.create(ctx);
+		child_ctx.point = list[i];
+		child_ctx.each_value_3 = list;
 		child_ctx.point_index_1 = i;
 		return child_ctx;
 	}
@@ -1968,10 +2175,18 @@
 		component.hover(ctx.point);
 	}
 
-	function get_each_context_2(ctx, list, i) {
+	function get_each_context_4(ctx, list, i) {
+		const child_ctx = Object.create(ctx);
+		child_ctx.dataset = list[i];
+		child_ctx.each_value_4 = list;
+		child_ctx.dataset_index_2 = i;
+		return child_ctx;
+	}
+
+	function get_each_context_5(ctx, list, i) {
 		const child_ctx = Object.create(ctx);
 		child_ctx.point = list[i];
-		child_ctx.each_value_2 = list;
+		child_ctx.each_value_5 = list;
 		child_ctx.point_index_2 = i;
 		return child_ctx;
 	}
@@ -1979,7 +2194,7 @@
 	function get_each_1_context(ctx, list, i) {
 		const child_ctx = Object.create(ctx);
 		child_ctx.hoveredPoint = list[i];
-		child_ctx.each_value_3 = list;
+		child_ctx.each_value_6 = list;
 		child_ctx.hoveredPoint_index = i;
 		return child_ctx;
 	}
@@ -1994,7 +2209,7 @@
 		init(this, options);
 		this.refs = {};
 		this._state = assign(data(), options.data);
-		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, dataset: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1, plotXMargin: 1, tickLength: 1, labelBuffer: 1, plotYMargin: 1 }, this._state);
+		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, datasets: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1, plotXMargin: 1, tickLength: 1, labelBuffer: 1, plotYMargin: 1 }, this._state);
 		this._intro = true;
 
 		this._fragment = create_main_fragment(this, this._state);
@@ -2019,7 +2234,7 @@
 			if (this._differs(state.plotHeight, (state.plotHeight = plotHeight(state)))) changed.plotHeight = true;
 		}
 
-		if (changed.dataset) {
+		if (changed.datasets) {
 			if (this._differs(state.minsAndMaxes, (state.minsAndMaxes = minsAndMaxes(state)))) changed.minsAndMaxes = true;
 		}
 
@@ -2042,6 +2257,247 @@
 		if (changed.topMargin || changed.plotHeight || changed.plotYMargin || changed.tickLength || changed.labelBuffer) {
 			if (this._differs(state.xLabelY, (state.xLabelY = xLabelY(state)))) changed.xLabelY = true;
 		}
+	};
+
+	var GBP = [
+		{
+			date: "2000-04-01",
+			strengthRelativeToUsd: 0.47909627282868533
+		},
+		{
+			date: "2001-04-01",
+			strengthRelativeToUsd: 0.5478773192952756
+		},
+		{
+			date: "2002-04-01",
+			strengthRelativeToUsd: 0.5511701977028113
+		},
+		{
+			date: "2003-04-01",
+			strengthRelativeToUsd: 0.4647578118376384
+		},
+		{
+			date: "2004-05-01",
+			strengthRelativeToUsd: 0.3621652861517241
+		},
+		{
+			date: "2005-06-01",
+			strengthRelativeToUsd: 0.33572627567320257
+		},
+		{
+			date: "2006-01-01",
+			strengthRelativeToUsd: 0.3383555741079365
+		},
+		{
+			date: "2006-05-01",
+			strengthRelativeToUsd: 0.33280496237419355
+		},
+		{
+			date: "2007-01-01",
+			strengthRelativeToUsd: 0.30487790507453416
+		},
+		{
+			date: "2007-06-01",
+			strengthRelativeToUsd: 0.28981089668035187
+		},
+		{
+			date: "2008-06-01",
+			strengthRelativeToUsd: 0.32139518614285717
+		},
+		{
+			date: "2009-07-01",
+			strengthRelativeToUsd: 0.3982718133165266
+		},
+		{
+			date: "2010-01-01",
+			strengthRelativeToUsd: 0.3989925177513966
+		},
+		{
+			date: "2010-07-01",
+			strengthRelativeToUsd: 0.4032295932252884
+		},
+		{
+			date: "2011-07-01",
+			strengthRelativeToUsd: 0.3610795796211562
+		},
+		{
+			date: "2012-01-01",
+			strengthRelativeToUsd: 0.38635611687497917
+		},
+		{
+			date: "2012-07-01",
+			strengthRelativeToUsd: 0.4017229508792606
+		},
+		{
+			date: "2013-01-01",
+			strengthRelativeToUsd: 0.39001278085434304
+		},
+		{
+			date: "2013-07-01",
+			strengthRelativeToUsd: 0.3950241350537656
+		},
+		{
+			date: "2014-01-01",
+			strengthRelativeToUsd: 0.36382666824193
+		},
+		{
+			date: "2014-07-01",
+			strengthRelativeToUsd: 0.3536622215245047
+		},
+		{
+			date: "2015-01-01",
+			strengthRelativeToUsd: 0.3991665846075157
+		},
+		{
+			date: "2015-07-01",
+			strengthRelativeToUsd: 0.3864098193173278
+		},
+		{
+			date: "2016-01-01",
+			strengthRelativeToUsd: 0.4012779520344828
+		},
+		{
+			date: "2016-07-01",
+			strengthRelativeToUsd: 0.45018513315079367
+		},
+		{
+			date: "2017-01-01",
+			strengthRelativeToUsd: 0.5061096771343874
+		},
+		{
+			date: "2017-07-01",
+			strengthRelativeToUsd: 0.46699522226603774
+		},
+		{
+			date: "2018-01-01",
+			strengthRelativeToUsd: 0.4367259410416666
+		},
+		{
+			date: "2018-07-01",
+			strengthRelativeToUsd: 0.43644731882476656
+		}
+	];
+	var EUR = [
+		{
+			date: "2000-04-01",
+			strengthRelativeToUsd: 1.0966885145498009
+		},
+		{
+			date: "2001-04-01",
+			strengthRelativeToUsd: 1.1497852537480313
+		},
+		{
+			date: "2002-04-01",
+			strengthRelativeToUsd: 1.2048192775180722
+		},
+		{
+			date: "2003-04-01",
+			strengthRelativeToUsd: 0.909090909
+		},
+		{
+			date: "2004-05-01",
+			strengthRelativeToUsd: 0.787356321524138
+		},
+		{
+			date: "2005-06-01",
+			strengthRelativeToUsd: 0.7776451523790849
+		},
+		{
+			date: "2006-01-01",
+			strengthRelativeToUsd: 0.7650596471428571
+		},
+		{
+			date: "2006-05-01",
+			strengthRelativeToUsd: 0.7399816816177502
+		},
+		{
+			date: "2007-01-01",
+			strengthRelativeToUsd: 0.7046991693913043
+		},
+		{
+			date: "2007-06-01",
+			strengthRelativeToUsd: 0.6579024962559316
+		},
+		{
+			date: "2008-06-01",
+			strengthRelativeToUsd: 0.594920859803451
+		},
+		{
+			date: "2009-07-01",
+			strengthRelativeToUsd: 0.6646862634145658
+		},
+		{
+			date: "2010-01-01",
+			strengthRelativeToUsd: 0.6510231239329608
+		},
+		{
+			date: "2010-07-01",
+			strengthRelativeToUsd: 0.7063235025446003
+		},
+		{
+			date: "2011-07-01",
+			strengthRelativeToUsd: 0.5898740383194455
+		},
+		{
+			date: "2012-01-01",
+			strengthRelativeToUsd: 0.6558845968544788
+		},
+		{
+			date: "2012-07-01",
+			strengthRelativeToUsd: 0.6830306042884763
+		},
+		{
+			date: "2013-01-01",
+			strengthRelativeToUsd: 0.6065887073482051
+		},
+		{
+			date: "2013-07-01",
+			strengthRelativeToUsd: 0.6185415455960713
+		},
+		{
+			date: "2014-01-01",
+			strengthRelativeToUsd: 0.5831791747990052
+		},
+		{
+			date: "2014-07-01",
+			strengthRelativeToUsd: 0.5699166307079702
+		},
+		{
+			date: "2015-01-01",
+			strengthRelativeToUsd: 0.6630710076659708
+		},
+		{
+			date: "2015-07-01",
+			strengthRelativeToUsd: 0.7050085237578287
+		},
+		{
+			date: "2016-01-01",
+			strengthRelativeToUsd: 0.7019199017768764
+		},
+		{
+			date: "2016-07-01",
+			strengthRelativeToUsd: 0.6884386287023809
+		},
+		{
+			date: "2017-01-01",
+			strengthRelativeToUsd: 0.7324816531541503
+		},
+		{
+			date: "2017-07-01",
+			strengthRelativeToUsd: 0.6460316555716981
+		},
+		{
+			date: "2018-01-01",
+			strengthRelativeToUsd: 0.6110729516193182
+		},
+		{
+			date: "2018-07-01",
+			strengthRelativeToUsd: 0.6255811110428928
+		}
+	];
+	var bigMacData = {
+		GBP: GBP,
+		EUR: EUR
 	};
 
 	var regexSource = regex => regex instanceof RegExp ? regex.source : regex;
@@ -2819,11 +3275,24 @@
 
 	const { getSheet } = browserBuild;
 
+	const pad2 = number => number < 10 ? `0` + number : number;
+	const formatNumberAsDate = timestamp => {
+		const date = new Date(timestamp);
+		return `${ date.getFullYear() }-${ pad2(date.getMonth() + 1) }-${ pad2(date.getDate()) }`
+	};
+
 	async function main() {
-		const body = document.body;
+		await setUpWeightGraph(document);
+
+		setUpBigMacGraph(document);
+	}
+
+	main();
+
+	async function setUpWeightGraph(doc) {
 		const points = await getWeightDataPoints();
 
-		const weightRadioButtons = document.querySelectorAll(`input[name=weight]`);
+		const weightRadioButtons = doc.querySelectorAll(`input[name=weight]`);
 
 		const getCurrentDataset = () => {
 			const currentlyChecked = Array.prototype.filter.call(weightRadioButtons, input => input.checked)
@@ -2835,33 +3304,59 @@
 		};
 
 		const graph = new ScatterGraph({
-			target: document.getElementById(`graph-target`),
+			target: doc.getElementById(`graph-target`),
 			data: {
-				dataset: getCurrentDataset(),
+				datasets: [ getCurrentDataset() ],
 				bottomFrame: `ticks`,
 				leftFrame: `ticks`,
-				formatX: x => {
-					const date = new Date(x);
-					return `${ date.getFullYear() }-${ date.getMonth() + 1 }-${ date.getDate() }`
-				},
+				formatX: formatNumberAsDate,
 				formatY: y => `${ y.toFixed(1) }lb`,
 			},
 		});
 
-		body.dataset.weightLoaded = true;
+		doc.body.dataset.weightLoaded = true;
 
 		weightRadioButtons.forEach(element => {
 			element.addEventListener(`change`, () => {
 				if (element.checked) {
 					graph.set({
-						dataset: getCurrentDataset(),
+						datasets: [ getCurrentDataset() ],
 					});
 				}
 			});
 		});
 	}
 
-	main();
+	function setUpBigMacGraph(doc) {
+		const colors = {
+			GBP: `var(--gbpColor)`,
+			EUR: `var(--eurColor)`,
+		};
+
+		const bigMacDatasets = Object.keys(bigMacData).map(
+			currency => ({
+				color: colors[currency],
+				points: bigMacData[currency].map(
+					({ date, strengthRelativeToUsd }) => ({
+						x: new Date(date).valueOf(),
+						y: strengthRelativeToUsd,
+					})
+				),
+			})
+		);
+
+		console.log(bigMacDatasets);
+
+		new ScatterGraph({
+			target: doc.getElementById(`big-mac-target`),
+			data: {
+				datasets: bigMacDatasets,
+				formatX: formatNumberAsDate,
+				formatY: y => y.toFixed(2),
+				bottomFrame: `line`,
+			},
+		});
+	}
 
 	async function getWeightDataPoints() {
 		const documentId = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`;
