@@ -1,4 +1,6 @@
 import ScatterGraph from './ScatterGraph.html'
+import bigMacData from './big-mac.json'
+
 import r from 'regex-fun'
 import sheetsy from 'sheetsy'
 const { getSheet } = sheetsy
@@ -6,11 +8,24 @@ const { getSheet } = sheetsy
 
 import subtractMonths from 'date-fns/sub_months'
 
+const pad2 = number => number < 10 ? `0` + number : number
+const formatNumberAsDate = timestamp => {
+	const date = new Date(timestamp)
+	return `${ date.getFullYear() }-${ pad2(date.getMonth() + 1) }-${ pad2(date.getDate()) }`
+}
+
 async function main() {
-	const body = document.body
+	await setUpWeightGraph(document)
+
+	setUpBigMacGraph(document)
+}
+
+main()
+
+async function setUpWeightGraph(doc) {
 	const points = await getWeightDataPoints()
 
-	const weightRadioButtons = document.querySelectorAll(`input[name=weight]`)
+	const weightRadioButtons = doc.querySelectorAll(`input[name=weight]`)
 
 	const getCurrentDataset = () => {
 		const currentlyChecked = Array.prototype.filter.call(weightRadioButtons, input => input.checked)
@@ -22,33 +37,59 @@ async function main() {
 	}
 
 	const graph = new ScatterGraph({
-		target: document.getElementById(`graph-target`),
+		target: doc.getElementById(`graph-target`),
 		data: {
-			dataset: getCurrentDataset(),
+			datasets: [ getCurrentDataset() ],
 			bottomFrame: `ticks`,
 			leftFrame: `ticks`,
-			formatX: x => {
-				const date = new Date(x)
-				return `${ date.getFullYear() }-${ date.getMonth() + 1 }-${ date.getDate() }`
-			},
+			formatX: formatNumberAsDate,
 			formatY: y => `${ y.toFixed(1) }lb`,
 		},
 	})
 
-	body.dataset.weightLoaded = true
+	doc.body.dataset.weightLoaded = true
 
 	weightRadioButtons.forEach(element => {
 		element.addEventListener(`change`, () => {
 			if (element.checked) {
 				graph.set({
-					dataset: getCurrentDataset(),
+					datasets: [ getCurrentDataset() ],
 				})
 			}
 		})
 	})
 }
 
-main()
+function setUpBigMacGraph(doc) {
+	const colors = {
+		GBP: `var(--gbpColor)`,
+		EUR: `var(--eurColor)`,
+	}
+
+	const bigMacDatasets = Object.keys(bigMacData).map(
+		currency => ({
+			color: colors[currency],
+			points: bigMacData[currency].map(
+				({ date, strengthRelativeToUsd }) => ({
+					x: new Date(date).valueOf(),
+					y: strengthRelativeToUsd,
+				})
+			),
+		})
+	)
+
+	console.log(bigMacDatasets)
+
+	new ScatterGraph({
+		target: doc.getElementById(`big-mac-target`),
+		data: {
+			datasets: bigMacDatasets,
+			formatX: formatNumberAsDate,
+			formatY: y => y.toFixed(2),
+			bottomFrame: `line`,
+		},
+	})
+}
 
 async function getWeightDataPoints() {
 	const documentId = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`

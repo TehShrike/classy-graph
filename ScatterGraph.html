@@ -62,16 +62,18 @@
 
 
 	{#if leftFrame === 'ticks'}
-		{#each dataset.points as point}
-			<line
-				x1={leftMargin - plotXMargin - tickLength}px
-				x2={leftMargin - plotXMargin}px
-				y1={calculatePlotY(point.y)}px
-				y2={calculatePlotY(point.y)}px
-				stroke={dataset.color}
-				stroke-width={tickWidth}px
-				stroke-opacity=0.4
-			/>
+		{#each datasets as dataset}
+			{#each dataset.points as point}
+				<line
+					x1={leftMargin - plotXMargin - tickLength}px
+					x2={leftMargin - plotXMargin}px
+					y1={calculatePlotY(point.y)}px
+					y2={calculatePlotY(point.y)}px
+					stroke={dataset.color}
+					stroke-width={tickWidth}px
+					stroke-opacity=0.4
+				/>
+			{/each}
 		{/each}
 	{:elseif leftFrame === 'line'}
 		<line
@@ -84,28 +86,32 @@
 		/>
 	{/if}
 
-	{#each dataset.points as point}
-		<circle
-			cx={calculatePlotX(point.x)}px
-			cy={calculatePlotY(point.y)}px
-			r={pointSize}
-			fill={dataset.color}
-			fill-opacity=0.8
-			on:mouseenter=hover(point)
-		/>
+	{#each datasets as dataset}
+		{#each dataset.points as point}
+			<circle
+				cx={calculatePlotX(point.x)}px
+				cy={calculatePlotY(point.y)}px
+				r={pointSize}
+				fill={dataset.color}
+				fill-opacity=0.8
+				on:mouseenter=hover(point)
+			/>
+		{/each}
 	{/each}
 
 	{#if bottomFrame === 'ticks'}
-		{#each dataset.points as point}
-			<line
-				x1={calculatePlotX(point.x)}px
-				x2={calculatePlotX(point.x)}px
-				y1={topMargin + plotYMargin + plotHeight}px
-				y2={topMargin + plotYMargin + plotHeight + tickLength}px
-				stroke={dataset.color}
-				stroke-width={tickWidth}px
-				stroke-opacity=0.4
-			/>
+		{#each datasets as dataset}
+			{#each dataset.points as point}
+				<line
+					x1={calculatePlotX(point.x)}px
+					x2={calculatePlotX(point.x)}px
+					y1={topMargin + plotYMargin + plotHeight}px
+					y2={topMargin + plotYMargin + plotHeight + tickLength}px
+					stroke={dataset.color}
+					stroke-width={tickWidth}px
+					stroke-opacity=0.4
+				/>
+			{/each}
 		{/each}
 	{:elseif bottomFrame === 'line'}
 		<line
@@ -182,6 +188,7 @@ const max = (maybeNull, number) => maybeNull === null ? number : Math.max(maybeN
 const min = (maybeNull, number) => maybeNull === null ? number : Math.min(maybeNull, number)
 
 const identity = value => value
+const flatten = ary => [].concat(...ary)
 
 const overlapsY = (svgElement, y) => {
 	const labelBox = svgElement.getBBox()
@@ -213,10 +220,10 @@ export default {
 			tickWidth: 0.8,
 			labelBuffer: 4,
 
-			dataset: {
+			datasets: [{
 				points: [],
 				color: `black`,
-			},
+			}],
 			formatX: identity,
 			formatY: identity,
 			plotYMargin: 20,
@@ -280,12 +287,16 @@ export default {
 
 			return topMargin + plotHeight - (yRatio * plotHeight)
 		},
-		minsAndMaxes: ({ dataset }) => dataset.points.reduce(({ minX, maxX, minY, maxY }, { x, y }) => ({
-			minX: min(minX, x),
-			maxX: max(maxX, x),
-			minY: min(minY, y),
-			maxY: max(maxY, y),
-		}), { minX: null, maxX: null, minY: null, maxY: null }),
+		minsAndMaxes: ({ datasets }) => flatten(
+			datasets.map(({ points }) => points)
+		).reduce(
+			({ minX, maxX, minY, maxY }, { x, y }) => ({
+				minX: min(minX, x),
+				maxX: max(maxX, x),
+				minY: min(minY, y),
+				maxY: max(maxY, y),
+			}), { minX: null, maxX: null, minY: null, maxY: null }
+		),
 		dataRanges: ({ minsAndMaxes }) => ({
 			x: minsAndMaxes.maxX - minsAndMaxes.minX,
 			y: minsAndMaxes.maxY - minsAndMaxes.minY,

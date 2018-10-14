@@ -1,9 +1,7 @@
 # MVP
 
-- another example graph
-	- strength of USD/GBP/EUR over time
-	- will need to handle multiple datasets
-	- big mac index data: https://github.com/TheEconomist/big-mac-data
+- touch support
+- make the highlight color based on the dataset color
 - explain the principles from the chapter
 
 # things to poke at
