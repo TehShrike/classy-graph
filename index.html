@@ -17,7 +17,9 @@
 
 
 		<div data-when-not=weight-loaded>
-			Loading data from Google Sheets...
+			<span style="height: 300px; width: 100%; display: flex; justify-content: center; align-items: center;">
+				Loading data from Google Sheets...
+			</span>
 		</div>
 		<div id=graph-target>
 		</div>
@@ -49,7 +51,7 @@
 			[data-weight-loaded=true] [data-when=weight-loaded] {
 				display: flex;
 			}
-			:not([data-weight-loaded=true]) [data-when-not=weight-loaded] {
+			[data-weight-loaded=true] [data-when-not=weight-loaded] {
 				display: none;
 			}
 		</style>
