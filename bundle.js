@@ -2377,6 +2377,124 @@
 			strengthRelativeToUsd: 0.43644731882476656
 		}
 	];
+	var CAD = [
+		{
+			date: "2000-04-01",
+			strengthRelativeToUsd: 1.6691235059760956
+		},
+		{
+			date: "2001-04-01",
+			strengthRelativeToUsd: 2.0451968503937006
+		},
+		{
+			date: "2002-04-01",
+			strengthRelativeToUsd: 2.0996385542168676
+		},
+		{
+			date: "2003-04-01",
+			strengthRelativeToUsd: 1.7121771217712176
+		},
+		{
+			date: "2004-05-01",
+			strengthRelativeToUsd: 1.5070000000000001
+		},
+		{
+			date: "2005-06-01",
+			strengthRelativeToUsd: 1.3392261437908497
+		},
+		{
+			date: "2006-01-01",
+			strengthRelativeToUsd: 1.307875555555556
+		},
+		{
+			date: "2006-05-01",
+			strengthRelativeToUsd: 1.2722529032258063
+		},
+		{
+			date: "2007-01-01",
+			strengthRelativeToUsd: 1.324442701863354
+		},
+		{
+			date: "2007-06-01",
+			strengthRelativeToUsd: 1.1986469208211141
+		},
+		{
+			date: "2008-06-01",
+			strengthRelativeToUsd: 1.149725350140056
+		},
+		{
+			date: "2009-07-01",
+			strengthRelativeToUsd: 1.2649037815126052
+		},
+		{
+			date: "2010-01-01",
+			strengthRelativeToUsd: 1.1931888268156423
+		},
+		{
+			date: "2010-07-01",
+			strengthRelativeToUsd: 1.1642677233182381
+		},
+		{
+			date: "2011-07-01",
+			strengthRelativeToUsd: 1.1005831488314883
+		},
+		{
+			date: "2012-01-01",
+			strengthRelativeToUsd: 1.1505457183564363
+		},
+		{
+			date: "2012-07-01",
+			strengthRelativeToUsd: 1.2061430387059504
+		},
+		{
+			date: "2013-01-01",
+			strengthRelativeToUsd: 1.242316750637427
+		},
+		{
+			date: "2013-07-01",
+			strengthRelativeToUsd: 1.2758037672804825
+		},
+		{
+			date: "2014-01-01",
+			strengthRelativeToUsd: 1.3239691474987227
+		},
+		{
+			date: "2014-07-01",
+			strengthRelativeToUsd: 1.2633247132429613
+		},
+		{
+			date: "2015-01-01",
+			strengthRelativeToUsd: 1.4619488517745303
+		},
+		{
+			date: "2015-07-01",
+			strengthRelativeToUsd: 1.5751033402922756
+		},
+		{
+			date: "2016-01-01",
+			strengthRelativeToUsd: 1.6693160243407708
+		},
+		{
+			date: "2016-07-01",
+			strengthRelativeToUsd: 1.551190476190476
+		},
+		{
+			date: "2017-01-01",
+			strengthRelativeToUsd: 1.5670909090909093
+		},
+		{
+			date: "2017-07-01",
+			strengthRelativeToUsd: 1.444402075471698
+		},
+		{
+			date: "2018-01-01",
+			strengthRelativeToUsd: 1.5455767045454545
+		},
+		{
+			date: "2018-07-01",
+			strengthRelativeToUsd: 1.5838706896551724
+		}
+	];
 	var EUR = [
 		{
 			date: "2000-04-01",
@@ -2497,6 +2615,7 @@
 	];
 	var bigMacData = {
 		GBP: GBP,
+		CAD: CAD,
 		EUR: EUR
 	};
 
@@ -3329,6 +3448,7 @@
 
 	function setUpBigMacGraph(doc) {
 		const colors = {
+			CAD: `var(--cadColor)`,
 			GBP: `var(--gbpColor)`,
 			EUR: `var(--eurColor)`,
 		};
