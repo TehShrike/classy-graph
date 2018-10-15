@@ -1601,6 +1601,7 @@
 				circle._svelte = { component, ctx };
 
 				addListener(circle, "mouseenter", mouseenter_handler);
+				addListener(circle, "click", click_handler);
 				setAttribute(circle, "cx", circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px");
 				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
 				setAttribute(circle, "r", ctx.pointSize);
@@ -1638,11 +1639,12 @@
 				}
 
 				removeListener(circle, "mouseenter", mouseenter_handler);
+				removeListener(circle, "click", click_handler);
 			}
 		};
 	}
 
-	// (103:2) {#each datasets as dataset}
+	// (104:2) {#each datasets as dataset}
 	function create_each_block_4(component, ctx) {
 		var each_anchor;
 
@@ -1704,7 +1706,7 @@
 		};
 	}
 
-	// (104:3) {#each dataset.points as point}
+	// (105:3) {#each dataset.points as point}
 	function create_each_block_5(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
 
@@ -1758,7 +1760,7 @@
 		};
 	}
 
-	// (102:1) {#if bottomFrame === 'ticks'}
+	// (103:1) {#if bottomFrame === 'ticks'}
 	function create_if_block_6(component, ctx) {
 		var each_anchor;
 
@@ -1820,7 +1822,7 @@
 		};
 	}
 
-	// (116:33) 
+	// (117:33) 
 	function create_if_block_7(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
@@ -1869,7 +1871,7 @@
 		};
 	}
 
-	// (127:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
+	// (128:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
 	function create_each_block_6(component, key_1, ctx) {
 		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_transition, line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_x_value, text_2_transition, current;
 
@@ -2170,6 +2172,12 @@
 	}
 
 	function mouseenter_handler(event) {
+		const { component, ctx } = this._svelte;
+
+		component.hover(ctx.point);
+	}
+
+	function click_handler(event) {
 		const { component, ctx } = this._svelte;
 
 		component.hover(ctx.point);
