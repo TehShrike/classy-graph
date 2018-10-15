@@ -62,6 +62,7 @@ async function setUpWeightGraph(doc) {
 
 function setUpBigMacGraph(doc) {
 	const colors = {
+		CAD: `var(--cadColor)`,
 		GBP: `var(--gbpColor)`,
 		EUR: `var(--eurColor)`,
 	}

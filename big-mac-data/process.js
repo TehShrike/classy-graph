@@ -1,7 +1,7 @@
 const neatCsv = require(`neat-csv`)
 const toCamelCase = require(`camelcase`)
 
-const isoZones = new Set([ `GBR`, `EUZ` ])
+const isoZones = new Set([ `CAN`, `GBR`, `EUZ` ])
 
 const relative = path => require(`path`).join(__dirname, path)
 
