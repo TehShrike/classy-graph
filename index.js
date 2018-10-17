@@ -64,22 +64,20 @@ function setUpBigMacGraph(doc) {
 	const colors = {
 		CAD: `var(--cadColor)`,
 		GBP: `var(--gbpColor)`,
-		EUR: `var(--eurColor)`,
+		USD: `var(--usdColor)`,
 	}
 
 	const bigMacDatasets = Object.keys(bigMacData).map(
 		currency => ({
 			color: colors[currency],
 			points: bigMacData[currency].map(
-				({ date, strengthRelativeToUsd }) => ({
+				({ date, usdCost }) => ({
 					x: new Date(date).valueOf(),
-					y: strengthRelativeToUsd,
+					y: usdCost,
 				})
 			),
 		})
 	)
-
-	console.log(bigMacDatasets)
 
 	new ScatterGraph({
 		target: doc.getElementById(`big-mac-target`),

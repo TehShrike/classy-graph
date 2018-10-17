@@ -10,7 +10,7 @@
 	</head>
 	<body data-weight-loaded=false>
 		<h1>Classy Graph</h1>
-		<h2>An exercise in "data-ink maximization"</h2>
+		<p class=subtitle>An exercise in "data-ink maximization"</p>
 		<p>
 			Based on chapter 6 of <a href="https://www.amazon.com/Visual-Display-Quantitative-Information/dp/0961392142">The Visual Display of Quantitative Information</a> by Edward R. Tufte.
 		</p>
@@ -63,19 +63,18 @@
 			:root {
 				--cadColor: #FF8315;
 				--gbpColor: #12D32A;
-				--eurColor: #1F45AC;
+				--usdColor: #1F45AC;
 			};
 		</style>
 		<h2>
-			Strength of the <span style="color: var(--cadColor)">Canadian dollar</span>,
-			<span style="color: var(--gbpColor)">British Pound</span>, and <span style="color: var(--eurColor)">Euro</span>
-			using the Big Mac index
+			Price of a Big Mac in <span style="color: var(--cadColor)">Canada</span>,
+			<span style="color: var(--gbpColor)">Britain</span>, and <span style="color: var(--usdColor)">America</span> over time (in US Dollars)
 		</h2>
 		<div id=big-mac-target></div>
-		<p>
-			"How many Big Macs could you buy in the US if you took the local price of a Big Mac in Canada/Britain/Europe and converted it to US dollars?"
-		</p>
 
+		<blockquote>
+			"Whoever wins, we lose" — a bad movie
+		</blockquote>
 
 		<p>
 			For a more general/powerful graphing library with a similarly small footprint, see <a href="https://layercake.graphics/">Layer Cake</a>.

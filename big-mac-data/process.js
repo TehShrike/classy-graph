@@ -1,7 +1,7 @@
 const neatCsv = require(`neat-csv`)
 const toCamelCase = require(`camelcase`)
 
-const isoZones = new Set([ `CAN`, `GBR`, `EUZ` ])
+const isoZones = new Set([ `CAN`, `GBR`, `USA` ])
 
 const relative = path => require(`path`).join(__dirname, path)
 
@@ -12,13 +12,13 @@ async function main() {
 		mapHeaders: toCamelCase,
 	})
 
-	const usdPrices = new Map()
+	// const usdPrices = new Map()
 
-	data.filter(
-		({ isoA3 }) => isoA3 === `USA`
-	).forEach(
-		({ date, localPrice }) => usdPrices.set(date, parseFloat(localPrice))
-	)
+	// data.filter(
+	// 	({ isoA3 }) => isoA3 === `USA`
+	// ).forEach(
+	// 	({ date, localPrice }) => usdPrices.set(date, parseFloat(localPrice))
+	// )
 
 	const desiredData = data.filter(
 		({ isoA3 }) => isoZones.has(isoA3)
@@ -26,17 +26,17 @@ async function main() {
 		({ currencyCode, localPrice, dollarEx, date }) => ({
 			currencyCode,
 			date,
-			strengthRelativeToUsd: (parseFloat(localPrice) * parseFloat(dollarEx)) / usdPrices.get(date),
+			usdCost: parseFloat(localPrice) / parseFloat(dollarEx),
 		})
 	)
 
 	const points = {}
-	desiredData.forEach(({ currencyCode, date, strengthRelativeToUsd }) => {
+	desiredData.forEach(({ currencyCode, date, usdCost }) => {
 		points[currencyCode] = points[currencyCode] || []
 
 		points[currencyCode].push({
 			date,
-			strengthRelativeToUsd,
+			usdCost,
 		})
 	})
 
