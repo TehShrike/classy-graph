@@ -15,7 +15,7 @@ const formatNumberAsDate = timestamp => {
 }
 
 async function main() {
-	await setUpWeightGraph(document)
+	setUpWeightGraph(document)
 
 	setUpBigMacGraph(document)
 }
