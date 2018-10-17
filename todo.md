@@ -1,7 +1,9 @@
 # MVP
 
-- touch support
 - make the highlight color based on the dataset color
+	- make the hovered thing the same color as the item
+	- lower the opacity for the non-hovered things
+	- opacity of 1 for the hovered thing
 - explain the principles from the chapter
 
 # things to poke at
