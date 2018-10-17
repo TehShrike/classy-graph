@@ -2270,361 +2270,361 @@
 	var GBP = [
 		{
 			date: "2000-04-01",
-			strengthRelativeToUsd: 0.47909627282868533
+			usdCost: 3.00200000192128
 		},
 		{
 			date: "2001-04-01",
-			strengthRelativeToUsd: 0.5478773192952756
+			usdCost: 2.845700001223651
 		},
 		{
 			date: "2002-04-01",
-			strengthRelativeToUsd: 0.5511701977028113
+			usdCost: 2.8855000017313
 		},
 		{
 			date: "2003-04-01",
-			strengthRelativeToUsd: 0.4647578118376384
+			usdCost: 3.1442000020122878
 		},
 		{
 			date: "2004-05-01",
-			strengthRelativeToUsd: 0.3621652861517241
+			usdCost: 3.365199999259656
 		},
 		{
 			date: "2005-06-01",
-			strengthRelativeToUsd: 0.33572627567320257
+			usdCost: 3.4404000027179156
 		},
 		{
 			date: "2006-01-01",
-			strengthRelativeToUsd: 0.3383555741079365
+			usdCost: 3.3161319980909028
 		},
 		{
 			date: "2006-05-01",
-			strengthRelativeToUsd: 0.33280496237419355
+			usdCost: 3.647976002124581
 		},
 		{
 			date: "2007-01-01",
-			strengthRelativeToUsd: 0.30487790507453416
+			usdCost: 3.8337309995968827
 		},
 		{
 			date: "2007-06-01",
-			strengthRelativeToUsd: 0.28981089668035187
+			usdCost: 4.007163503499055
 		},
 		{
 			date: "2008-06-01",
-			strengthRelativeToUsd: 0.32139518614285717
+			usdCost: 4.5704965026351205
 		},
 		{
 			date: "2009-07-01",
-			strengthRelativeToUsd: 0.3982718133165266
+			usdCost: 3.688274000606352
 		},
 		{
 			date: "2010-01-01",
-			strengthRelativeToUsd: 0.3989925177513966
+			usdCost: 3.6713280000587414
 		},
 		{
 			date: "2010-07-01",
-			strengthRelativeToUsd: 0.4032295932252884
+			usdCost: 3.4835479999052477
 		},
 		{
 			date: "2011-07-01",
-			strengthRelativeToUsd: 0.3610795796211562
+			usdCost: 3.8916369997462654
 		},
 		{
 			date: "2012-01-01",
-			strengthRelativeToUsd: 0.38635611687497917
+			usdCost: 3.823395001772144
 		},
 		{
 			date: "2012-07-01",
-			strengthRelativeToUsd: 0.4017229508792606
+			usdCost: 4.162371500299899
 		},
 		{
 			date: "2013-01-01",
-			strengthRelativeToUsd: 0.39001278085434304
+			usdCost: 4.248182498028843
 		},
 		{
 			date: "2013-07-01",
-			strengthRelativeToUsd: 0.3950241350537656
+			usdCost: 4.020070499363623
 		},
 		{
 			date: "2014-01-01",
-			strengthRelativeToUsd: 0.36382666824193
+			usdCost: 4.626796499883173
 		},
 		{
 			date: "2014-07-01",
-			strengthRelativeToUsd: 0.3536622215245047
+			usdCost: 4.925137996188928
 		},
 		{
 			date: "2015-01-01",
-			strengthRelativeToUsd: 0.3991665846075157
+			usdCost: 4.368234997403084
 		},
 		{
 			date: "2015-07-01",
-			strengthRelativeToUsd: 0.3864098193173278
+			usdCost: 4.512446002943017
 		},
 		{
 			date: "2016-01-01",
-			strengthRelativeToUsd: 0.4012779520344828
+			usdCost: 4.221856502320121
 		},
 		{
 			date: "2016-07-01",
-			strengthRelativeToUsd: 0.45018513315079367
+			usdCost: 3.9402219985909768
 		},
 		{
 			date: "2017-01-01",
-			strengthRelativeToUsd: 0.5061096771343874
+			usdCost: 3.728394002005876
 		},
 		{
 			date: "2017-07-01",
-			strengthRelativeToUsd: 0.46699522226603774
+			usdCost: 4.111431501606953
 		},
 		{
 			date: "2018-01-01",
-			strengthRelativeToUsd: 0.4367259410416666
+			usdCost: 4.413045998755521
 		},
 		{
 			date: "2018-07-01",
-			strengthRelativeToUsd: 0.43644731882476656
+			usdCost: 4.231534999999998
 		}
 	];
 	var CAD = [
 		{
 			date: "2000-04-01",
-			strengthRelativeToUsd: 1.6691235059760956
+			usdCost: 1.9387755102040818
 		},
 		{
 			date: "2001-04-01",
-			strengthRelativeToUsd: 2.0451968503937006
+			usdCost: 2.1346153846153846
 		},
 		{
 			date: "2002-04-01",
-			strengthRelativeToUsd: 2.0996385542168676
+			usdCost: 2.1210191082802545
 		},
 		{
 			date: "2003-04-01",
-			strengthRelativeToUsd: 1.7121771217712176
+			usdCost: 2.206896551724138
 		},
 		{
 			date: "2004-05-01",
-			strengthRelativeToUsd: 1.5070000000000001
+			usdCost: 2.3284671532846715
 		},
 		{
 			date: "2005-06-01",
-			strengthRelativeToUsd: 1.3392261437908497
+			usdCost: 2.6252601248599325
 		},
 		{
 			date: "2006-01-01",
-			strengthRelativeToUsd: 1.307875555555556
+			usdCost: 3.007518796992481
 		},
 		{
 			date: "2006-05-01",
-			strengthRelativeToUsd: 1.2722529032258063
+			usdCost: 3.141594894908296
 		},
 		{
 			date: "2007-01-01",
-			strengthRelativeToUsd: 1.324442701863354
+			usdCost: 3.089756139081585
 		},
 		{
 			date: "2007-06-01",
-			strengthRelativeToUsd: 1.1986469208211141
+			usdCost: 3.68313636147895
 		},
 		{
 			date: "2008-06-01",
-			strengthRelativeToUsd: 1.149725350140056
+			usdCost: 4.07553186189029
 		},
 		{
 			date: "2009-07-01",
-			strengthRelativeToUsd: 1.2649037815126052
+			usdCost: 3.3509928069948747
 		},
 		{
 			date: "2010-01-01",
-			strengthRelativeToUsd: 1.1931888268156423
+			usdCost: 3.973765432098766
 		},
 		{
 			date: "2010-07-01",
-			strengthRelativeToUsd: 1.1642677233182381
+			usdCost: 4.00057562239171
 		},
 		{
 			date: "2011-07-01",
-			strengthRelativeToUsd: 1.1005831488314883
+			usdCost: 5.000792937569383
 		},
 		{
 			date: "2012-01-01",
-			strengthRelativeToUsd: 1.1505457183564363
+			usdCost: 4.63293990890837
 		},
 		{
 			date: "2012-07-01",
-			strengthRelativeToUsd: 1.2061430387059504
+			usdCost: 5.022315954681446
 		},
 		{
 			date: "2013-01-01",
-			strengthRelativeToUsd: 1.242316750637427
+			usdCost: 5.3943563665370435
 		},
 		{
 			date: "2013-07-01",
-			strengthRelativeToUsd: 1.2758037672804825
+			usdCost: 5.260404280618312
 		},
 		{
 			date: "2014-01-01",
-			strengthRelativeToUsd: 1.3239691474987227
+			usdCost: 5.013120984526287
 		},
 		{
 			date: "2014-07-01",
-			strengthRelativeToUsd: 1.2633247132429613
+			usdCost: 5.251152180997161
 		},
 		{
 			date: "2015-01-01",
-			strengthRelativeToUsd: 1.4619488517745303
+			usdCost: 4.6396158072524525
 		},
 		{
 			date: "2015-07-01",
-			strengthRelativeToUsd: 1.5751033402922756
+			usdCost: 4.535938590369853
 		},
 		{
 			date: "2016-01-01",
-			strengthRelativeToUsd: 1.6693160243407708
+			usdCost: 4.144195288106727
 		},
 		{
 			date: "2016-07-01",
-			strengthRelativeToUsd: 1.551190476190476
+			usdCost: 4.604758250191865
 		},
 		{
 			date: "2017-01-01",
-			strengthRelativeToUsd: 1.5670909090909093
+			usdCost: 4.509803921568627
 		},
 		{
 			date: "2017-07-01",
-			strengthRelativeToUsd: 1.444402075471698
+			usdCost: 4.655696794821805
 		},
 		{
 			date: "2018-01-01",
-			strengthRelativeToUsd: 1.5455767045454545
+			usdCost: 5.257243759531263
 		},
 		{
 			date: "2018-07-01",
-			strengthRelativeToUsd: 1.5838706896551724
+			usdCost: 5.06724578047015
 		}
 	];
-	var EUR = [
+	var USD = [
 		{
 			date: "2000-04-01",
-			strengthRelativeToUsd: 1.0966885145498009
+			usdCost: 2.51
 		},
 		{
 			date: "2001-04-01",
-			strengthRelativeToUsd: 1.1497852537480313
+			usdCost: 2.54
 		},
 		{
 			date: "2002-04-01",
-			strengthRelativeToUsd: 1.2048192775180722
+			usdCost: 2.49
 		},
 		{
 			date: "2003-04-01",
-			strengthRelativeToUsd: 0.909090909
+			usdCost: 2.71
 		},
 		{
 			date: "2004-05-01",
-			strengthRelativeToUsd: 0.787356321524138
+			usdCost: 2.9
 		},
 		{
 			date: "2005-06-01",
-			strengthRelativeToUsd: 0.7776451523790849
+			usdCost: 3.06
 		},
 		{
 			date: "2006-01-01",
-			strengthRelativeToUsd: 0.7650596471428571
+			usdCost: 3.15
 		},
 		{
 			date: "2006-05-01",
-			strengthRelativeToUsd: 0.7399816816177502
+			usdCost: 3.1
 		},
 		{
 			date: "2007-01-01",
-			strengthRelativeToUsd: 0.7046991693913043
+			usdCost: 3.22
 		},
 		{
 			date: "2007-06-01",
-			strengthRelativeToUsd: 0.6579024962559316
+			usdCost: 3.41
 		},
 		{
 			date: "2008-06-01",
-			strengthRelativeToUsd: 0.594920859803451
+			usdCost: 3.57
 		},
 		{
 			date: "2009-07-01",
-			strengthRelativeToUsd: 0.6646862634145658
+			usdCost: 3.57
 		},
 		{
 			date: "2010-01-01",
-			strengthRelativeToUsd: 0.6510231239329608
+			usdCost: 3.58
 		},
 		{
 			date: "2010-07-01",
-			strengthRelativeToUsd: 0.7063235025446003
+			usdCost: 3.733333333
 		},
 		{
 			date: "2011-07-01",
-			strengthRelativeToUsd: 0.5898740383194455
+			usdCost: 4.065
 		},
 		{
 			date: "2012-01-01",
-			strengthRelativeToUsd: 0.6558845968544788
+			usdCost: 4.19722
 		},
 		{
 			date: "2012-07-01",
-			strengthRelativeToUsd: 0.6830306042884763
+			usdCost: 4.3275
 		},
 		{
 			date: "2013-01-01",
-			strengthRelativeToUsd: 0.6065887073482051
+			usdCost: 4.367395833
 		},
 		{
 			date: "2013-07-01",
-			strengthRelativeToUsd: 0.6185415455960713
+			usdCost: 4.556666667
 		},
 		{
 			date: "2014-01-01",
-			strengthRelativeToUsd: 0.5831791747990052
+			usdCost: 4.624166667
 		},
 		{
 			date: "2014-07-01",
-			strengthRelativeToUsd: 0.5699166307079702
+			usdCost: 4.795
 		},
 		{
 			date: "2015-01-01",
-			strengthRelativeToUsd: 0.6630710076659708
+			usdCost: 4.79
 		},
 		{
 			date: "2015-07-01",
-			strengthRelativeToUsd: 0.7050085237578287
+			usdCost: 4.79
 		},
 		{
 			date: "2016-01-01",
-			strengthRelativeToUsd: 0.7019199017768764
+			usdCost: 4.93
 		},
 		{
 			date: "2016-07-01",
-			strengthRelativeToUsd: 0.6884386287023809
+			usdCost: 5.04
 		},
 		{
 			date: "2017-01-01",
-			strengthRelativeToUsd: 0.7324816531541503
+			usdCost: 5.06
 		},
 		{
 			date: "2017-07-01",
-			strengthRelativeToUsd: 0.6460316555716981
+			usdCost: 5.3
 		},
 		{
 			date: "2018-01-01",
-			strengthRelativeToUsd: 0.6110729516193182
+			usdCost: 5.28
 		},
 		{
 			date: "2018-07-01",
-			strengthRelativeToUsd: 0.6255811110428928
+			usdCost: 5.51
 		}
 	];
 	var bigMacData = {
 		GBP: GBP,
 		CAD: CAD,
-		EUR: EUR
+		USD: USD
 	};
 
 	var regexSource = regex => regex instanceof RegExp ? regex.source : regex;
@@ -3409,7 +3409,7 @@
 	};
 
 	async function main() {
-		await setUpWeightGraph(document);
+		setUpWeightGraph(document);
 
 		setUpBigMacGraph(document);
 	}
@@ -3458,22 +3458,20 @@
 		const colors = {
 			CAD: `var(--cadColor)`,
 			GBP: `var(--gbpColor)`,
-			EUR: `var(--eurColor)`,
+			USD: `var(--usdColor)`,
 		};
 
 		const bigMacDatasets = Object.keys(bigMacData).map(
 			currency => ({
 				color: colors[currency],
 				points: bigMacData[currency].map(
-					({ date, strengthRelativeToUsd }) => ({
+					({ date, usdCost }) => ({
 						x: new Date(date).valueOf(),
-						y: strengthRelativeToUsd,
+						y: usdCost,
 					})
 				),
 			})
 		);
-
-		console.log(bigMacDatasets);
 
 		new ScatterGraph({
 			target: doc.getElementById(`big-mac-target`),
