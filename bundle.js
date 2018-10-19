@@ -642,6 +642,10 @@
 		return topMargin + plotHeight + plotYMargin + tickLength + labelBuffer;
 	}
 
+	function dataOpacity({ hoveredPoints }) {
+		return hoveredPoints.length ? 0.4 : 0.8;
+	}
+
 	function data() {
 		return {
 			leftMargin: 100,
@@ -677,7 +681,7 @@
 		}
 	}
 	var methods = {
-		hover(hoveredPoint) {
+		hover(hoveredPoint, dataset) {
 			const { calculatePlotX, calculatePlotY } = this.get();
 
 			const hoverOverlaps = {};
@@ -704,12 +708,23 @@
 				}
 			}
 
+			const hoverPointDisplay = hoveredPoint && Object.assign({
+				color: dataset.color,
+			}, hoveredPoint);
+
 			this.set({
-				hoveredPoints: hoveredPoint ? [ hoveredPoint ] : [],
+				hoveredPoints: hoverPointDisplay ? [ hoverPointDisplay ] : [],
 				hoverOverlaps,
 			});
 		},
 	};
+
+	function add_css() {
+		var style = createElement("style");
+		style.id = 'svelte-1cot3eq-style';
+		style.textContent = "line.svelte-1cot3eq{transition:stroke-opacity 400ms}circle.svelte-1cot3eq{transition:fill-opacity 400ms}";
+		append(document.head, style);
+	}
 
 	function create_main_fragment(component, ctx) {
 		var svg, if_block_anchor, if_block_1_anchor, if_block_2_anchor, if_block_3_anchor, if_block_4_anchor, each_anchor, if_block_6_anchor, each_1_blocks_1 = [], each_1_lookup = blankObject(), svg_viewBox_value, current;
@@ -889,7 +904,7 @@
 					if (if_block_4) if_block_4.m(svg, if_block_4_anchor);
 				}
 
-				if (changed.datasets || changed.calculatePlotX || changed.calculatePlotY || changed.pointSize) {
+				if (changed.datasets || changed.calculatePlotX || changed.calculatePlotY || changed.pointSize || changed.dataOpacity) {
 					each_value_2 = ctx.datasets;
 
 					for (var i = 0; i < each_value_2.length; i += 1) {
@@ -1327,7 +1342,7 @@
 			},
 
 			p(changed, ctx) {
-				if (changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.datasets || changed.tickWidth) {
+				if (changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.datasets || changed.tickWidth || changed.dataOpacity) {
 					each_value_1 = ctx.dataset.points;
 
 					for (var i = 0; i < each_value_1.length; i += 1) {
@@ -1372,7 +1387,8 @@
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.point.y) + "px");
 				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
 				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
-				setAttribute(line, "stroke-opacity", "0.4");
+				setAttribute(line, "stroke-opacity", ctx.dataOpacity);
+				setAttribute(line, "class", "svelte-1cot3eq");
 			},
 
 			m(target, anchor) {
@@ -1402,6 +1418,10 @@
 
 				if ((changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth + "px")) {
 					setAttribute(line, "stroke-width", line_stroke_width_value);
+				}
+
+				if (changed.dataOpacity) {
+					setAttribute(line, "stroke-opacity", ctx.dataOpacity);
 				}
 			},
 
@@ -1443,7 +1463,7 @@
 			},
 
 			p(changed, ctx) {
-				if (changed.datasets || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.tickWidth) {
+				if (changed.datasets || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.tickWidth || changed.dataOpacity) {
 					each_value = ctx.datasets;
 
 					for (var i = 0; i < each_value.length; i += 1) {
@@ -1488,6 +1508,7 @@
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.minsAndMaxes.maxY) + "px");
 				setAttribute(line, "stroke", ctx.baseColor);
 				setAttribute(line, "stroke-width", "1px");
+				setAttribute(line, "class", "svelte-1cot3eq");
 			},
 
 			m(target, anchor) {
@@ -1554,7 +1575,7 @@
 			},
 
 			p(changed, ctx) {
-				if (changed.calculatePlotX || changed.datasets || changed.calculatePlotY || changed.pointSize) {
+				if (changed.calculatePlotX || changed.datasets || changed.calculatePlotY || changed.pointSize || changed.dataOpacity) {
 					each_value_3 = ctx.dataset.points;
 
 					for (var i = 0; i < each_value_3.length; i += 1) {
@@ -1601,7 +1622,8 @@
 				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
 				setAttribute(circle, "r", ctx.pointSize);
 				setAttribute(circle, "fill", circle_fill_value = ctx.dataset.color);
-				setAttribute(circle, "fill-opacity", "0.8");
+				setAttribute(circle, "fill-opacity", ctx.dataOpacity);
+				setAttribute(circle, "class", "svelte-1cot3eq");
 			},
 
 			m(target, anchor) {
@@ -1625,6 +1647,10 @@
 
 				if ((changed.datasets) && circle_fill_value !== (circle_fill_value = ctx.dataset.color)) {
 					setAttribute(circle, "fill", circle_fill_value);
+				}
+
+				if (changed.dataOpacity) {
+					setAttribute(circle, "fill-opacity", ctx.dataOpacity);
 				}
 			},
 
@@ -1669,7 +1695,7 @@
 			},
 
 			p(changed, ctx) {
-				if (changed.calculatePlotX || changed.datasets || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth) {
+				if (changed.calculatePlotX || changed.datasets || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth || changed.dataOpacity) {
 					each_value_5 = ctx.dataset.points;
 
 					for (var i = 0; i < each_value_5.length; i += 1) {
@@ -1714,7 +1740,8 @@
 				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
 				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
 				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
-				setAttribute(line, "stroke-opacity", "0.4");
+				setAttribute(line, "stroke-opacity", ctx.dataOpacity);
+				setAttribute(line, "class", "svelte-1cot3eq");
 			},
 
 			m(target, anchor) {
@@ -1744,6 +1771,10 @@
 
 				if ((changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth + "px")) {
 					setAttribute(line, "stroke-width", line_stroke_width_value);
+				}
+
+				if (changed.dataOpacity) {
+					setAttribute(line, "stroke-opacity", ctx.dataOpacity);
 				}
 			},
 
@@ -1785,7 +1816,7 @@
 			},
 
 			p(changed, ctx) {
-				if (changed.datasets || changed.calculatePlotX || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth) {
+				if (changed.datasets || changed.calculatePlotX || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth || changed.dataOpacity) {
 					each_value_4 = ctx.datasets;
 
 					for (var i = 0; i < each_value_4.length; i += 1) {
@@ -1830,6 +1861,7 @@
 				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
 				setAttribute(line, "stroke", ctx.baseColor);
 				setAttribute(line, "stroke-width", "1px");
+				setAttribute(line, "class", "svelte-1cot3eq");
 			},
 
 			m(target, anchor) {
@@ -1868,7 +1900,7 @@
 
 	// (128:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
 	function create_each_block_6(component, key_1, ctx) {
-		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_transition, line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_x_value, text_2_transition, current;
+		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_fill_value, circle_transition, line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_value, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_fill_value, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_fill_value, text_2_x_value, text_2_transition, current;
 
 		return {
 			key: key_1,
@@ -1889,26 +1921,29 @@
 				setAttribute(circle, "cx", circle_cx_value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
 				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
 				setAttribute(circle, "r", circle_r_value = ctx.pointSize * 3);
-				setAttribute(circle, "fill", ctx.highlightColor);
+				setAttribute(circle, "fill", circle_fill_value = ctx.hoveredPoint.color);
+				setAttribute(circle, "class", "svelte-1cot3eq");
 				setAttribute(line, "x1", line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin - ctx.tickLength) + "px");
 				setAttribute(line, "x2", line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px");
 				setAttribute(line, "y1", line_y__value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
-				setAttribute(line, "stroke", ctx.highlightColor);
+				setAttribute(line, "stroke", line_stroke_value = ctx.hoveredPoint.color);
 				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth * 2 + "px");
+				setAttribute(line, "class", "svelte-1cot3eq");
 				setAttribute(line_1, "x1", line_1_x__value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
 				setAttribute(line_1, "x2", line_1_x__value_1 = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
 				setAttribute(line_1, "y1", line_1_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
 				setAttribute(line_1, "y2", line_1_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
-				setAttribute(line_1, "stroke", ctx.highlightColor);
+				setAttribute(line_1, "stroke", line_1_stroke_value = ctx.hoveredPoint.color);
 				setAttribute(line_1, "stroke-width", line_1_stroke_width_value = "" + ctx.tickWidth * 2 + "px");
-				setAttribute(text, "fill", ctx.highlightColor);
+				setAttribute(line_1, "class", "svelte-1cot3eq");
+				setAttribute(text, "fill", text_fill_value = ctx.hoveredPoint.color);
 				setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text, "text-anchor", "end");
 				setAttribute(text, "x", ctx.yLabelX);
 				setAttribute(text, "y", text_y_value = ctx.calculatePlotY(ctx.hoveredPoint.y));
 				setAttribute(text, "dy", "4");
-				setAttribute(text_2, "fill", ctx.highlightColor);
+				setAttribute(text_2, "fill", text_2_fill_value = ctx.hoveredPoint.color);
 				setStyle(text_2, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text_2, "text-anchor", "middle");
 				setAttribute(text_2, "x", text_2_x_value = ctx.calculatePlotX(ctx.hoveredPoint.x));
@@ -1941,8 +1976,8 @@
 					setAttribute(circle, "r", circle_r_value);
 				}
 
-				if (!current || changed.highlightColor) {
-					setAttribute(circle, "fill", ctx.highlightColor);
+				if ((!current || changed.hoveredPoints) && circle_fill_value !== (circle_fill_value = ctx.hoveredPoint.color)) {
+					setAttribute(circle, "fill", circle_fill_value);
 				}
 
 				if ((!current || changed.leftMargin || changed.plotXMargin || changed.tickLength) && line_x__value !== (line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin - ctx.tickLength) + "px")) {
@@ -1961,8 +1996,8 @@
 					setAttribute(line, "y2", line_y__value_1);
 				}
 
-				if (!current || changed.highlightColor) {
-					setAttribute(line, "stroke", ctx.highlightColor);
+				if ((!current || changed.hoveredPoints) && line_stroke_value !== (line_stroke_value = ctx.hoveredPoint.color)) {
+					setAttribute(line, "stroke", line_stroke_value);
 				}
 
 				if ((!current || changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth * 2 + "px")) {
@@ -1985,8 +2020,8 @@
 					setAttribute(line_1, "y2", line_1_y__value_1);
 				}
 
-				if (!current || changed.highlightColor) {
-					setAttribute(line_1, "stroke", ctx.highlightColor);
+				if ((!current || changed.hoveredPoints) && line_1_stroke_value !== (line_1_stroke_value = ctx.hoveredPoint.color)) {
+					setAttribute(line_1, "stroke", line_1_stroke_value);
 				}
 
 				if ((!current || changed.tickWidth) && line_1_stroke_width_value !== (line_1_stroke_width_value = "" + ctx.tickWidth * 2 + "px")) {
@@ -1997,8 +2032,8 @@
 					setData(text_1, text_1_value);
 				}
 
-				if (!current || changed.highlightColor) {
-					setAttribute(text, "fill", ctx.highlightColor);
+				if ((!current || changed.hoveredPoints) && text_fill_value !== (text_fill_value = ctx.hoveredPoint.color)) {
+					setAttribute(text, "fill", text_fill_value);
 				}
 
 				if (!current || changed.fontSize) {
@@ -2017,8 +2052,8 @@
 					setData(text_3, text_3_value);
 				}
 
-				if (!current || changed.highlightColor) {
-					setAttribute(text_2, "fill", ctx.highlightColor);
+				if ((!current || changed.hoveredPoints) && text_2_fill_value !== (text_2_fill_value = ctx.hoveredPoint.color)) {
+					setAttribute(text_2, "fill", text_2_fill_value);
 				}
 
 				if (!current || changed.fontSize) {
@@ -2169,13 +2204,13 @@
 	function mouseenter_handler(event) {
 		const { component, ctx } = this._svelte;
 
-		component.hover(ctx.point);
+		component.hover(ctx.point, ctx.dataset);
 	}
 
 	function click_handler(event) {
 		const { component, ctx } = this._svelte;
 
-		component.hover(ctx.point);
+		component.hover(ctx.point, ctx.dataset);
 	}
 
 	function get_each_context_4(ctx, list, i) {
@@ -2212,8 +2247,10 @@
 		init(this, options);
 		this.refs = {};
 		this._state = assign(data(), options.data);
-		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, datasets: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1, plotXMargin: 1, tickLength: 1, labelBuffer: 1, plotYMargin: 1 }, this._state);
+		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, datasets: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1, plotXMargin: 1, tickLength: 1, labelBuffer: 1, plotYMargin: 1, hoveredPoints: 1 }, this._state);
 		this._intro = true;
+
+		if (!document.getElementById("svelte-1cot3eq-style")) add_css();
 
 		this._fragment = create_main_fragment(this, this._state);
 
@@ -2259,6 +2296,10 @@
 
 		if (changed.topMargin || changed.plotHeight || changed.plotYMargin || changed.tickLength || changed.labelBuffer) {
 			if (this._differs(state.xLabelY, (state.xLabelY = xLabelY(state)))) changed.xLabelY = true;
+		}
+
+		if (changed.hoveredPoints) {
+			if (this._differs(state.dataOpacity, (state.dataOpacity = dataOpacity(state)))) changed.dataOpacity = true;
 		}
 	};
 
