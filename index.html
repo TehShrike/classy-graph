@@ -21,7 +21,7 @@
 				Loading data from Google Sheets...
 			</span>
 		</div>
-		<div id=graph-target>
+		<div id=graph-target class=graph-container>
 		</div>
 		<div data-when=weight-loaded style="justify-content: center;">
 			<label>
@@ -64,13 +64,13 @@
 				--cadColor: #FF8315;
 				--gbpColor: #12D32A;
 				--usdColor: #1F45AC;
-			};
+			}
 		</style>
 		<h2>
 			Price of a Big Mac in <span style="color: var(--cadColor)">Canada</span>,
 			<span style="color: var(--gbpColor)">Britain</span>, and <span style="color: var(--usdColor)">America</span> over time (in US Dollars)
 		</h2>
-		<div id=big-mac-target></div>
+		<div id=big-mac-target class=graph-container></div>
 
 		<blockquote>
 			"Whoever wins, we lose" — a bad movie
@@ -79,6 +79,12 @@
 		<p>
 			For a more general/powerful graphing library with a similarly small footprint, see <a href="https://layercake.graphics/">Layer Cake</a>.
 		</p>
+
+		<style>
+			.graph-container > svg {
+				width: 100%;
+			}
+		</style>
 	</body>
 	<script src="./bundle.js"></script>
 </html>

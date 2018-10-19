@@ -1,12 +1,17 @@
+:root {
+	--bodyPadding: 16px;
+	--bodyMaxWidth: 600px;
+}
+
 body {
 	margin-left: auto;
 	margin-right: auto;
 	margin-top: 0;
 	margin-bottom: 0;
 
-	padding: 16px;
+	padding: var(--bodyPadding);
 
-	max-width: 600px;
+	max-width: var(--bodyMaxWidth);
 
 	font-family: "Lato", "Helvetica Neue", Helvetica;
 	color: var(--black);

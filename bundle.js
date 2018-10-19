@@ -712,7 +712,7 @@
 	};
 
 	function create_main_fragment(component, ctx) {
-		var svg, if_block_anchor, if_block_1_anchor, if_block_2_anchor, if_block_3_anchor, if_block_4_anchor, each_anchor, if_block_6_anchor, each_1_blocks_1 = [], each_1_lookup = blankObject(), svg_height_value, svg_width_value, current;
+		var svg, if_block_anchor, if_block_1_anchor, if_block_2_anchor, if_block_3_anchor, if_block_4_anchor, each_anchor, if_block_6_anchor, each_1_blocks_1 = [], each_1_lookup = blankObject(), svg_viewBox_value, current;
 
 		var if_block = (!ctx.hoverOverlaps.maxYLabel) && create_if_block(component, ctx);
 
@@ -782,8 +782,7 @@
 
 				for (i = 0; i < each_1_blocks_1.length; i += 1) each_1_blocks_1[i].c();
 				setAttribute(svg, "xmlns", "http://www.w3.org/2000/svg");
-				setAttribute(svg, "height", svg_height_value = "" + ctx.height + "px");
-				setAttribute(svg, "width", svg_width_value = "" + ctx.width + "px");
+				setAttribute(svg, "viewBox", svg_viewBox_value = "0 0 " + ctx.width + " " + ctx.height);
 			},
 
 			m(target, anchor) {
@@ -925,12 +924,8 @@
 				groupOutros();
 				each_1_blocks_1 = updateKeyedEach(each_1_blocks_1, component, changed, get_key, 1, ctx, each_value_6, each_1_lookup, svg, outroAndDestroyBlock, create_each_block_6, "i", null, get_each_1_context);
 
-				if ((!current || changed.height) && svg_height_value !== (svg_height_value = "" + ctx.height + "px")) {
-					setAttribute(svg, "height", svg_height_value);
-				}
-
-				if ((!current || changed.width) && svg_width_value !== (svg_width_value = "" + ctx.width + "px")) {
-					setAttribute(svg, "width", svg_width_value);
+				if ((!current || changed.width || changed.height) && svg_viewBox_value !== (svg_viewBox_value = "0 0 " + ctx.width + " " + ctx.height)) {
+					setAttribute(svg, "viewBox", svg_viewBox_value);
 				}
 			},
 
