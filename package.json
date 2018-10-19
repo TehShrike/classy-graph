@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified :-(\" && exit 0",
     "build": "node big-mac-data/process.js && rollup -c",
-    "watch": "rollup -c -w --dev"
+    "watch": "rollup -c -w"
   },
   "keywords": [
     "graph",
