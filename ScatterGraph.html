@@ -71,7 +71,7 @@
 					y2={calculatePlotY(point.y)}px
 					stroke={dataset.color}
 					stroke-width={tickWidth}px
-					stroke-opacity=0.4
+					stroke-opacity={dataOpacity}
 				/>
 			{/each}
 		{/each}
@@ -93,9 +93,9 @@
 				cy={calculatePlotY(point.y)}px
 				r={pointSize}
 				fill={dataset.color}
-				fill-opacity=0.8
-				on:mouseenter=hover(point)
-				on:click=hover(point)
+				fill-opacity={dataOpacity}
+				on:mouseenter="hover(point, dataset)"
+				on:click="hover(point, dataset)"
 			/>
 		{/each}
 	{/each}
@@ -110,7 +110,7 @@
 					y2={topMargin + plotYMargin + plotHeight + tickLength}px
 					stroke={dataset.color}
 					stroke-width={tickWidth}px
-					stroke-opacity=0.4
+					stroke-opacity={dataOpacity}
 				/>
 			{/each}
 		{/each}
@@ -130,7 +130,7 @@
 			cx={calculatePlotX(hoveredPoint.x)}px
 			cy={calculatePlotY(hoveredPoint.y)}px
 			r={pointSize * 3}
-			fill={highlightColor}
+			fill={hoveredPoint.color}
 			on:mouseleave=hover(null)
 			transition:fade="{duration: 100}"
 		/>
@@ -140,7 +140,7 @@
 			x2={leftMargin - plotXMargin}px
 			y1={calculatePlotY(hoveredPoint.y)}px
 			y2={calculatePlotY(hoveredPoint.y)}px
-			stroke={highlightColor}
+			stroke={hoveredPoint.color}
 			stroke-width={tickWidth * 2}px
 			transition:fade="{duration: 200}"
 		/>
@@ -150,13 +150,13 @@
 			x2={calculatePlotX(hoveredPoint.x)}px
 			y1={topMargin + plotYMargin + plotHeight}px
 			y2={topMargin + plotYMargin + plotHeight + tickLength}px
-			stroke={highlightColor}
+			stroke={hoveredPoint.color}
 			stroke-width={tickWidth * 2}px
 			transition:fade="{duration: 200}"
 		/>
 
 		<text
-			fill={highlightColor}
+			fill={hoveredPoint.color}
 			style="font-size: {fontSize}px;"
 			text-anchor=end
 			x={ yLabelX }
@@ -167,7 +167,7 @@
 			{ formatY(hoveredPoint.y) }
 		</text>
 		<text
-			fill={highlightColor}
+			fill={hoveredPoint.color}
 			style="font-size: {fontSize}px;"
 			text-anchor=middle
 			x={ calculatePlotX(hoveredPoint.x) }
@@ -180,6 +180,15 @@
 	{/each}
 
 </svg>
+
+<style>
+	line {
+		transition: stroke-opacity 400ms;
+	}
+	circle {
+		transition: fill-opacity 400ms;
+	}
+</style>
 
 <script>
 import fade from 'svelte-transitions-fade'
@@ -239,7 +248,7 @@ export default {
 		}
 	},
 	methods: {
-		hover(hoveredPoint) {
+		hover(hoveredPoint, dataset) {
 			const { calculatePlotX, calculatePlotY } = this.get()
 
 			const hoverOverlaps = {}
@@ -266,8 +275,12 @@ export default {
 				}
 			}
 
+			const hoverPointDisplay = hoveredPoint && Object.assign({
+				color: dataset.color,
+			}, hoveredPoint)
+
 			this.set({
-				hoveredPoints: hoveredPoint ? [ hoveredPoint ] : [],
+				hoveredPoints: hoverPointDisplay ? [ hoverPointDisplay ] : [],
 				hoverOverlaps,
 			})
 		},
@@ -306,6 +319,7 @@ export default {
 			leftMargin - plotXMargin - tickLength - (labelBuffer * 2),
 		xLabelY: ({ topMargin, plotHeight, plotYMargin, tickLength, labelBuffer }) =>
 			topMargin + plotHeight + plotYMargin + tickLength + labelBuffer,
+		dataOpacity: ({ hoveredPoints }) => hoveredPoints.length ? 0.4 : 0.8,
 	},
 }
 </script>
