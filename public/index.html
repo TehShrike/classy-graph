@@ -10,12 +10,28 @@
 	</head>
 	<body data-weight-loaded=false>
 		<h1>Classy Graph</h1>
-		<p class=subtitle>An exercise in "data-ink maximization"</p>
+		<p class=light style="text-align: center">An exercise in "data-ink maximization"</p>
 		<p>
-			Based on chapter 6 of <a href="https://www.amazon.com/Visual-Display-Quantitative-Information/dp/0961392142">The Visual Display of Quantitative Information</a> by Edward R. Tufte.
+			A scatter graph based on chapter 6 of <a href="https://www.amazon.com/Visual-Display-Quantitative-Information/dp/0961392142">The Visual Display of Quantitative Information</a> by Edward R. Tufte.
 		</p>
 
+		<ul>
+			<li>
+				Don't use any more of a frame around the data area than necessary
+			</li>
+			<li>
+				When possible, turn the frame itself into data
+			</li>
+			<li>
+				Avoid displaying arbitrarily/unnecessary labels along the frame
+			</li>
+		</ul>
 
+		<h2>Examples</h2>
+
+		<h3>
+			<span style="color: var(--weightColor)">Weight</span> over time
+		</h3>
 		<div data-when-not=weight-loaded>
 			<span style="height: 300px; width: 100%; display: flex; justify-content: center; align-items: center;">
 				Loading data from Google Sheets...
@@ -33,6 +49,9 @@
 				Last 3 months
 			</label>
 		</div>
+		<p>
+			This data is loaded live from Google Sheets using <a href="https://github.com/TehShrike/sheetsy/">Sheetsy</a>.
+		</p>
 		<style>
 			label {
 				display: flex;
@@ -58,23 +77,17 @@
 
 		<hr>
 
-
-		<style>
-			:root {
-				--cadColor: #FF8315;
-				--gbpColor: #12D32A;
-				--usdColor: #1F45AC;
-			}
-		</style>
-		<h2>
-			Price of a Big Mac in <span style="color: var(--cadColor)">Canada</span>,
-			<span style="color: var(--gbpColor)">Britain</span>, and <span style="color: var(--usdColor)">America</span> over time (in US Dollars)
-		</h2>
+		<h3>
+			Price (USD) of a Big Mac in <span style="color: var(--cadColor)">Canada</span>,
+			<span style="color: var(--gbpColor)">Britain</span>, and <span style="color: var(--usdColor)">America</span> over time
+		</h3>
 		<div id=big-mac-target class=graph-container></div>
 
-		<blockquote>
-			"Whoever wins, we lose" — a bad movie
-		</blockquote>
+		<p>
+			Source: <a href="https://github.com/TheEconomist/big-mac-data">the Big Mac Index</a> by The Economist.
+		</p>
+
+		<hr>
 
 		<p>
 			For a more general/powerful graphing library with a similarly small footprint, see <a href="https://layercake.graphics/">Layer Cake</a>.

@@ -44,6 +44,7 @@ async function setUpWeightGraph(doc) {
 			leftFrame: `ticks`,
 			formatX: formatNumberAsDate,
 			formatY: y => `${ y.toFixed(1) }lb`,
+			color: `var(--weightColor)`,
 		},
 	})
 
