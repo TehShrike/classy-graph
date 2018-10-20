@@ -62,19 +62,23 @@
 
 
 	{#if leftFrame === 'ticks'}
-		{#each datasets as dataset}
-			{#each dataset.points as point}
-				<line
-					x1={leftMargin - plotXMargin - tickLength}px
-					x2={leftMargin - plotXMargin}px
-					y1={calculatePlotY(point.y)}px
-					y2={calculatePlotY(point.y)}px
-					stroke={dataset.color}
-					stroke-width={tickWidth}px
-					stroke-opacity={dataOpacity}
-				/>
+		<g
+			stroke-width={tickWidth}px
+			stroke-opacity={dataOpacity * 0.5}
+		>
+			{#each datasets as dataset}
+				<g stroke={dataset.color}>
+					{#each dataset.points as point}
+						<line
+							x1={leftMargin - plotXMargin - tickLength}px
+							x2={leftMargin - plotXMargin}px
+							y1={calculatePlotY(point.y)}px
+							y2={calculatePlotY(point.y)}px
+						/>
+					{/each}
+				</g>
 			{/each}
-		{/each}
+		</g>
 	{:elseif leftFrame === 'line'}
 		<line
 			x1={leftMargin - plotXMargin}px
@@ -86,34 +90,59 @@
 		/>
 	{/if}
 
-	{#each datasets as dataset}
-		{#each dataset.points as point}
-			<circle
-				cx={calculatePlotX(point.x)}px
-				cy={calculatePlotY(point.y)}px
-				r={pointSize}
-				fill={dataset.color}
-				fill-opacity={dataOpacity}
-				on:mouseenter="hover(point, dataset)"
-				on:click="hover(point, dataset)"
-			/>
-		{/each}
-	{/each}
 
-	{#if bottomFrame === 'ticks'}
+	<g fill-opacity=0>
 		{#each datasets as dataset}
 			{#each dataset.points as point}
-				<line
-					x1={calculatePlotX(point.x)}px
-					x2={calculatePlotX(point.x)}px
-					y1={topMargin + plotYMargin + plotHeight}px
-					y2={topMargin + plotYMargin + plotHeight + tickLength}px
-					stroke={dataset.color}
-					stroke-width={tickWidth}px
-					stroke-opacity={dataOpacity}
+				<circle
+					r={pointSize * 3}
+					cx={calculatePlotX(point.x)}px
+					cy={calculatePlotY(point.y)}px
+					on:mouseenter="hover(point, dataset)"
+					on:click="hover(point, dataset)"
+					data-dataset-color={dataset.color}
 				/>
 			{/each}
 		{/each}
+	</g>
+
+	<g fill-opacity={dataOpacity}>
+		{#each datasets as dataset}
+			<g fill={dataset.color}>
+				{#each dataset.points as point}
+					<circle
+						cx={calculatePlotX(point.x)}px
+						cy={calculatePlotY(point.y)}px
+						r={point === hoveredPoint ? pointSize * 3 : pointSize}
+						fill-opacity={point === hoveredPoint ? 1 : 'inherit'}
+						on:mouseenter="hover(point, dataset)"
+						on:click="hover(point, dataset)"
+						on:mouseleave=hover(null)
+						data-dataset-color={dataset.color}
+					/>
+				{/each}
+			</g>
+		{/each}
+	</g>
+
+	{#if bottomFrame === 'ticks'}
+		<g
+			stroke-width={tickWidth}px
+			stroke-opacity={dataOpacity * 0.5}
+		>
+			{#each datasets as dataset}
+				<g stroke={dataset.color}>
+					{#each dataset.points as point}
+						<line
+							x1={calculatePlotX(point.x)}px
+							x2={calculatePlotX(point.x)}px
+							y1={topMargin + plotYMargin + plotHeight}px
+							y2={topMargin + plotYMargin + plotHeight + tickLength}px
+						/>
+					{/each}
+				</g>
+			{/each}
+		</g>
 	{:elseif bottomFrame === 'line'}
 		<line
 			x1={calculatePlotX(minsAndMaxes.minX)}px
@@ -125,22 +154,13 @@
 		/>
 	{/if}
 
-	{#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
-		<circle
-			cx={calculatePlotX(hoveredPoint.x)}px
-			cy={calculatePlotY(hoveredPoint.y)}px
-			r={pointSize * 3}
-			fill={hoveredPoint.color}
-			on:mouseleave=hover(null)
-			transition:fade="{duration: 100}"
-		/>
-
+	{#if hoveredPoint}
 		<line
 			x1={leftMargin - plotXMargin - tickLength}px
 			x2={leftMargin - plotXMargin}px
 			y1={calculatePlotY(hoveredPoint.y)}px
 			y2={calculatePlotY(hoveredPoint.y)}px
-			stroke={hoveredPoint.color}
+			stroke={hoveredColor}
 			stroke-width={tickWidth * 2}px
 			transition:fade="{duration: 200}"
 		/>
@@ -150,13 +170,13 @@
 			x2={calculatePlotX(hoveredPoint.x)}px
 			y1={topMargin + plotYMargin + plotHeight}px
 			y2={topMargin + plotYMargin + plotHeight + tickLength}px
-			stroke={hoveredPoint.color}
+			stroke={hoveredColor}
 			stroke-width={tickWidth * 2}px
 			transition:fade="{duration: 200}"
 		/>
 
 		<text
-			fill={hoveredPoint.color}
+			fill={hoveredColor}
 			style="font-size: {fontSize}px;"
 			text-anchor=end
 			x={ yLabelX }
@@ -167,7 +187,7 @@
 			{ formatY(hoveredPoint.y) }
 		</text>
 		<text
-			fill={hoveredPoint.color}
+			fill={hoveredColor}
 			style="font-size: {fontSize}px;"
 			text-anchor=middle
 			x={ calculatePlotX(hoveredPoint.x) }
@@ -177,7 +197,7 @@
 		>
 			{ formatX(hoveredPoint.x) }
 		</text>
-	{/each}
+	{/if}
 
 </svg>
 
@@ -213,6 +233,7 @@ const overlapsX = (svgElement, x) => {
 
 
 export default {
+	namespace: `svg`,
 	data() {
 		return {
 			leftMargin: 100,
@@ -243,12 +264,16 @@ export default {
 			baseColor: `#797979`,
 			highlightColor: `#9A0000`,
 
-			hoveredPoints: [],
+			hoveredPoint: null,
+			hoveredColor: null,
 			hoverOverlaps: {},
 		}
 	},
 	methods: {
-		hover(hoveredPoint, dataset) {
+		calculateBestHover() {
+
+		},
+		hover(hoveredPoint, dataset = null) {
 			const { calculatePlotX, calculatePlotY } = this.get()
 
 			const hoverOverlaps = {}
@@ -275,13 +300,10 @@ export default {
 				}
 			}
 
-			const hoverPointDisplay = hoveredPoint && Object.assign({
-				color: dataset.color,
-			}, hoveredPoint)
-
 			this.set({
-				hoveredPoints: hoverPointDisplay ? [ hoverPointDisplay ] : [],
+				hoveredPoint,
 				hoverOverlaps,
+				hoveredColor: dataset && dataset.color,
 			})
 		},
 	},
@@ -319,7 +341,7 @@ export default {
 			leftMargin - plotXMargin - tickLength - (labelBuffer * 2),
 		xLabelY: ({ topMargin, plotHeight, plotYMargin, tickLength, labelBuffer }) =>
 			topMargin + plotHeight + plotYMargin + tickLength + labelBuffer,
-		dataOpacity: ({ hoveredPoints }) => hoveredPoints.length ? 0.4 : 0.8,
+		dataOpacity: ({ hoveredPoint }) => hoveredPoint ? 0.4 : 0.8,
 	},
 }
 </script>
