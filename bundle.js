@@ -585,8 +585,44 @@
 		}
 	}
 	var methods = {
-		calculateBestHover() {
+		calculateBestHover(event) {
+			const { clientX, clientY } = event;
 
+			let cursorIsDirectlyOverPoints = false;
+			const relevantPoints = document.elementsFromPoint(clientX, clientY).filter(element => {
+				cursorIsDirectlyOverPoints = cursorIsDirectlyOverPoints || !!element.dataset.actualPoint;
+				return `pointIndex` in element.dataset && `datasetIndex` in element.dataset
+			}).filter(
+				element => cursorIsDirectlyOverPoints ? element.dataset.actualPoint : !element.dataset.actualPoint
+			);
+
+			const currentlyHoveredPoint = this.get().hoveredPoint;
+			const setHoverPoint = element => {
+				const datasetIndex = parseInt(element.dataset.datasetIndex, 10);
+				const pointIndex = parseInt(element.dataset.pointIndex, 10);
+				const dataset = this.get().datasets[datasetIndex];
+				const point = dataset.points[pointIndex];
+				if (point !== currentlyHoveredPoint) {
+					this.hover(point, dataset);
+				}
+			};
+
+			if (relevantPoints.length === 1) {
+				setHoverPoint(relevantPoints[0]);
+			} else if (relevantPoints.length > 1) {
+				const pointsToSort = relevantPoints.map(element => {
+					const { x, y } = element.getBoundingClientRect();
+					const xDiff = Math.abs(x - clientX);
+					const yDiff = Math.abs(y - clientY);
+					return {
+						diff: xDiff + yDiff,
+						element,
+					}
+				});
+
+				pointsToSort.sort((a, b) => a.diff - b.diff);
+				setHoverPoint(pointsToSort[0].element);
+			}
 		},
 		hover(hoveredPoint, dataset = null) {
 			const { calculatePlotX, calculatePlotY } = this.get();
@@ -625,8 +661,8 @@
 
 	function add_css() {
 		var style = createElement("style");
-		style.id = 'svelte-1cot3eq-style';
-		style.textContent = "line.svelte-1cot3eq{transition:stroke-opacity 400ms}circle.svelte-1cot3eq{transition:fill-opacity 400ms}";
+		style.id = 'svelte-o02ty2-style';
+		style.textContent = "line.svelte-o02ty2{transition:stroke-opacity 400ms}circle[data-hovered=false].svelte-o02ty2{transition:fill-opacity 400ms}";
 		append(document.head, style);
 	}
 
@@ -1332,7 +1368,7 @@
 				setAttribute(line, "x2", line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px");
 				setAttribute(line, "y1", line_y__value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.point.y) + "px");
-				setAttribute(line, "class", "svelte-1cot3eq");
+				setAttribute(line, "class", "svelte-o02ty2");
 			},
 
 			m(target, anchor) {
@@ -1450,7 +1486,7 @@
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.minsAndMaxes.maxY) + "px");
 				setAttribute(line, "stroke", ctx.baseColor);
 				setAttribute(line, "stroke-width", "1px");
-				setAttribute(line, "class", "svelte-1cot3eq");
+				setAttribute(line, "class", "svelte-o02ty2");
 			},
 
 			m(target, anchor) {
@@ -1487,7 +1523,7 @@
 		};
 	}
 
-	// (95:2) {#each datasets as dataset}
+	// (95:2) {#each datasets as dataset, datasetIndex}
 	function create_each_block_2(component, ctx) {
 		var each_anchor;
 
@@ -1549,22 +1585,22 @@
 		};
 	}
 
-	// (96:3) {#each dataset.points as point}
+	// (96:3) {#each dataset.points as point, pointIndex}
 	function create_each_block_3(component, ctx) {
-		var circle, circle_r_value, circle_cx_value, circle_cy_value, circle_data_dataset_color_value;
+		var circle, circle_r_value, circle_cx_value, circle_cy_value;
 
 		return {
 			c() {
 				circle = createSvgElement("circle");
 				circle._svelte = { component, ctx };
 
-				addListener(circle, "mouseenter", mouseenter_handler);
+				addListener(circle, "mousemove", mousemove_handler);
 				addListener(circle, "click", click_handler);
 				setAttribute(circle, "r", circle_r_value = ctx.pointSize * 3);
 				setAttribute(circle, "cx", circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px");
 				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
-				setAttribute(circle, "data-dataset-color", circle_data_dataset_color_value = ctx.dataset.color);
-				setAttribute(circle, "class", "svelte-1cot3eq");
+				setAttribute(circle, "data-dataset-index", ctx.datasetIndex);
+				setAttribute(circle, "data-point-index", ctx.pointIndex);
 			},
 
 			m(target, anchor) {
@@ -1585,10 +1621,6 @@
 				if ((changed.calculatePlotY || changed.datasets) && circle_cy_value !== (circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
 					setAttribute(circle, "cy", circle_cy_value);
 				}
-
-				if ((changed.datasets) && circle_data_dataset_color_value !== (circle_data_dataset_color_value = ctx.dataset.color)) {
-					setAttribute(circle, "data-dataset-color", circle_data_dataset_color_value);
-				}
 			},
 
 			d(detach) {
@@ -1596,13 +1628,13 @@
 					detachNode(circle);
 				}
 
-				removeListener(circle, "mouseenter", mouseenter_handler);
+				removeListener(circle, "mousemove", mousemove_handler);
 				removeListener(circle, "click", click_handler);
 			}
 		};
 	}
 
-	// (110:2) {#each datasets as dataset}
+	// (111:2) {#each datasets as dataset, datasetIndex}
 	function create_each_block_4(component, ctx) {
 		var g, g_fill_value;
 
@@ -1669,24 +1701,27 @@
 		};
 	}
 
-	// (112:4) {#each dataset.points as point}
+	// (113:4) {#each dataset.points as point, pointIndex}
 	function create_each_block_5(component, ctx) {
-		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_fill_opacity_value, circle_data_dataset_color_value;
+		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_fill_opacity_value, circle_data_hovered_value;
 
 		return {
 			c() {
 				circle = createSvgElement("circle");
 				circle._svelte = { component, ctx };
 
-				addListener(circle, "mouseenter", mouseenter_handler_1);
+				addListener(circle, "mousemove", mousemove_handler_1);
 				addListener(circle, "click", click_handler_1);
 				addListener(circle, "mouseleave", mouseleave_handler);
 				setAttribute(circle, "cx", circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px");
 				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
 				setAttribute(circle, "r", circle_r_value = ctx.point === ctx.hoveredPoint ? ctx.pointSize * 3 : ctx.pointSize);
 				setAttribute(circle, "fill-opacity", circle_fill_opacity_value = ctx.point === ctx.hoveredPoint ? 1 : 'inherit');
-				setAttribute(circle, "data-dataset-color", circle_data_dataset_color_value = ctx.dataset.color);
-				setAttribute(circle, "class", "svelte-1cot3eq");
+				setAttribute(circle, "data-dataset-index", ctx.datasetIndex);
+				setAttribute(circle, "data-point-index", ctx.pointIndex);
+				setAttribute(circle, "data-actual-point", true);
+				setAttribute(circle, "data-hovered", circle_data_hovered_value = ctx.point === ctx.hoveredPoint);
+				setAttribute(circle, "class", "svelte-o02ty2");
 			},
 
 			m(target, anchor) {
@@ -1712,8 +1747,8 @@
 					setAttribute(circle, "fill-opacity", circle_fill_opacity_value);
 				}
 
-				if ((changed.datasets) && circle_data_dataset_color_value !== (circle_data_dataset_color_value = ctx.dataset.color)) {
-					setAttribute(circle, "data-dataset-color", circle_data_dataset_color_value);
+				if ((changed.datasets || changed.hoveredPoint) && circle_data_hovered_value !== (circle_data_hovered_value = ctx.point === ctx.hoveredPoint)) {
+					setAttribute(circle, "data-hovered", circle_data_hovered_value);
 				}
 			},
 
@@ -1722,14 +1757,14 @@
 					detachNode(circle);
 				}
 
-				removeListener(circle, "mouseenter", mouseenter_handler_1);
+				removeListener(circle, "mousemove", mousemove_handler_1);
 				removeListener(circle, "click", click_handler_1);
 				removeListener(circle, "mouseleave", mouseleave_handler);
 			}
 		};
 	}
 
-	// (133:3) {#each datasets as dataset}
+	// (137:3) {#each datasets as dataset}
 	function create_each_block_6(component, ctx) {
 		var g, g_stroke_value;
 
@@ -1796,7 +1831,7 @@
 		};
 	}
 
-	// (135:5) {#each dataset.points as point}
+	// (139:5) {#each dataset.points as point}
 	function create_each_block_7(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
@@ -1807,7 +1842,7 @@
 				setAttribute(line, "x2", line_x__value_1 = "" + ctx.calculatePlotX(ctx.point.x) + "px");
 				setAttribute(line, "y1", line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
 				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
-				setAttribute(line, "class", "svelte-1cot3eq");
+				setAttribute(line, "class", "svelte-o02ty2");
 			},
 
 			m(target, anchor) {
@@ -1840,7 +1875,7 @@
 		};
 	}
 
-	// (128:1) {#if bottomFrame === 'ticks'}
+	// (132:1) {#if bottomFrame === 'ticks'}
 	function create_if_block_6(component, ctx) {
 		var g, g_stroke_width_value, g_stroke_opacity_value;
 
@@ -1912,7 +1947,7 @@
 		};
 	}
 
-	// (146:33) 
+	// (150:33) 
 	function create_if_block_7(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
@@ -1925,7 +1960,7 @@
 				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
 				setAttribute(line, "stroke", ctx.baseColor);
 				setAttribute(line, "stroke-width", "1px");
-				setAttribute(line, "class", "svelte-1cot3eq");
+				setAttribute(line, "class", "svelte-o02ty2");
 			},
 
 			m(target, anchor) {
@@ -1962,7 +1997,7 @@
 		};
 	}
 
-	// (157:1) {#if hoveredPoint}
+	// (161:1) {#if hoveredPoint}
 	function create_if_block_8(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_x_value, text_2_transition, current;
 
@@ -1980,14 +2015,14 @@
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
 				setAttribute(line, "stroke", ctx.hoveredColor);
 				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth * 2 + "px");
-				setAttribute(line, "class", "svelte-1cot3eq");
+				setAttribute(line, "class", "svelte-o02ty2");
 				setAttribute(line_1, "x1", line_1_x__value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
 				setAttribute(line_1, "x2", line_1_x__value_1 = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
 				setAttribute(line_1, "y1", line_1_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
 				setAttribute(line_1, "y2", line_1_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
 				setAttribute(line_1, "stroke", ctx.hoveredColor);
 				setAttribute(line_1, "stroke-width", line_1_stroke_width_value = "" + ctx.tickWidth * 2 + "px");
-				setAttribute(line_1, "class", "svelte-1cot3eq");
+				setAttribute(line_1, "class", "svelte-o02ty2");
 				setAttribute(text, "fill", ctx.hoveredColor);
 				setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text, "text-anchor", "end");
@@ -2204,7 +2239,7 @@
 		const child_ctx = Object.create(ctx);
 		child_ctx.dataset = list[i];
 		child_ctx.each_value_2 = list;
-		child_ctx.dataset_index_1 = i;
+		child_ctx.datasetIndex = i;
 		return child_ctx;
 	}
 
@@ -2212,14 +2247,14 @@
 		const child_ctx = Object.create(ctx);
 		child_ctx.point = list[i];
 		child_ctx.each_value_3 = list;
-		child_ctx.point_index_1 = i;
+		child_ctx.pointIndex = i;
 		return child_ctx;
 	}
 
-	function mouseenter_handler(event) {
-		const { component, ctx } = this._svelte;
+	function mousemove_handler(event) {
+		const { component } = this._svelte;
 
-		component.hover(ctx.point, ctx.dataset);
+		component.calculateBestHover(event);
 	}
 
 	function click_handler(event) {
@@ -2232,7 +2267,7 @@
 		const child_ctx = Object.create(ctx);
 		child_ctx.dataset = list[i];
 		child_ctx.each_value_4 = list;
-		child_ctx.dataset_index_2 = i;
+		child_ctx.datasetIndex = i;
 		return child_ctx;
 	}
 
@@ -2240,14 +2275,14 @@
 		const child_ctx = Object.create(ctx);
 		child_ctx.point = list[i];
 		child_ctx.each_value_5 = list;
-		child_ctx.point_index_2 = i;
+		child_ctx.pointIndex = i;
 		return child_ctx;
 	}
 
-	function mouseenter_handler_1(event) {
-		const { component, ctx } = this._svelte;
+	function mousemove_handler_1(event) {
+		const { component } = this._svelte;
 
-		component.hover(ctx.point, ctx.dataset);
+		component.calculateBestHover(event);
 	}
 
 	function click_handler_1(event) {
@@ -2266,7 +2301,7 @@
 		const child_ctx = Object.create(ctx);
 		child_ctx.dataset = list[i];
 		child_ctx.each_value_6 = list;
-		child_ctx.dataset_index_3 = i;
+		child_ctx.dataset_index_1 = i;
 		return child_ctx;
 	}
 
@@ -2274,7 +2309,7 @@
 		const child_ctx = Object.create(ctx);
 		child_ctx.point = list[i];
 		child_ctx.each_value_7 = list;
-		child_ctx.point_index_3 = i;
+		child_ctx.point_index_1 = i;
 		return child_ctx;
 	}
 
@@ -2285,7 +2320,7 @@
 		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, datasets: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1, plotXMargin: 1, tickLength: 1, labelBuffer: 1, plotYMargin: 1, hoveredPoint: 1 }, this._state);
 		this._intro = true;
 
-		if (!document.getElementById("svelte-1cot3eq-style")) add_css();
+		if (!document.getElementById("svelte-o02ty2-style")) add_css();
 
 		this._fragment = create_main_fragment(this, this._state);
 
