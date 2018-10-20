@@ -327,103 +327,6 @@
 		}
 	};
 
-	function destroyBlock(block, lookup) {
-		block.d(1);
-		lookup[block.key] = null;
-	}
-
-	function outroAndDestroyBlock(block, lookup) {
-		block.o(function() {
-			destroyBlock(block, lookup);
-		});
-	}
-
-	function updateKeyedEach(old_blocks, component, changed, get_key, dynamic, ctx, list, lookup, node, destroy, create_each_block, intro_method, next, get_context) {
-		var o = old_blocks.length;
-		var n = list.length;
-
-		var i = o;
-		var old_indexes = {};
-		while (i--) old_indexes[old_blocks[i].key] = i;
-
-		var new_blocks = [];
-		var new_lookup = {};
-		var deltas = {};
-
-		var i = n;
-		while (i--) {
-			var child_ctx = get_context(ctx, list, i);
-			var key = get_key(child_ctx);
-			var block = lookup[key];
-
-			if (!block) {
-				block = create_each_block(component, key, child_ctx);
-				block.c();
-			} else if (dynamic) {
-				block.p(changed, child_ctx);
-			}
-
-			new_blocks[i] = new_lookup[key] = block;
-
-			if (key in old_indexes) deltas[key] = Math.abs(i - old_indexes[key]);
-		}
-
-		var will_move = {};
-		var did_move = {};
-
-		function insert(block) {
-			block[intro_method](node, next);
-			lookup[block.key] = block;
-			next = block.first;
-			n--;
-		}
-
-		while (o && n) {
-			var new_block = new_blocks[n - 1];
-			var old_block = old_blocks[o - 1];
-			var new_key = new_block.key;
-			var old_key = old_block.key;
-
-			if (new_block === old_block) {
-				// do nothing
-				next = new_block.first;
-				o--;
-				n--;
-			}
-
-			else if (!new_lookup[old_key]) {
-				// remove old block
-				destroy(old_block, lookup);
-				o--;
-			}
-
-			else if (!lookup[new_key] || will_move[new_key]) {
-				insert(new_block);
-			}
-
-			else if (did_move[old_key]) {
-				o--;
-
-			} else if (deltas[new_key] > deltas[old_key]) {
-				did_move[new_key] = true;
-				insert(new_block);
-
-			} else {
-				will_move[old_key] = true;
-				o--;
-			}
-		}
-
-		while (o--) {
-			var old_block = old_blocks[o];
-			if (!new_lookup[old_block.key]) destroy(old_block, lookup);
-		}
-
-		while (n) insert(new_blocks[n - 1]);
-
-		return new_blocks;
-	}
-
 	function blankObject() {
 		return Object.create(null);
 	}
@@ -642,8 +545,8 @@
 		return topMargin + plotHeight + plotYMargin + tickLength + labelBuffer;
 	}
 
-	function dataOpacity({ hoveredPoints }) {
-		return hoveredPoints.length ? 0.4 : 0.8;
+	function dataOpacity({ hoveredPoint }) {
+		return hoveredPoint ? 0.4 : 0.8;
 	}
 
 	function data() {
@@ -676,12 +579,16 @@
 			baseColor: `#797979`,
 			highlightColor: `#9A0000`,
 
-			hoveredPoints: [],
+			hoveredPoint: null,
+			hoveredColor: null,
 			hoverOverlaps: {},
 		}
 	}
 	var methods = {
-		hover(hoveredPoint, dataset) {
+		calculateBestHover() {
+
+		},
+		hover(hoveredPoint, dataset = null) {
 			const { calculatePlotX, calculatePlotY } = this.get();
 
 			const hoverOverlaps = {};
@@ -708,13 +615,10 @@
 				}
 			}
 
-			const hoverPointDisplay = hoveredPoint && Object.assign({
-				color: dataset.color,
-			}, hoveredPoint);
-
 			this.set({
-				hoveredPoints: hoverPointDisplay ? [ hoverPointDisplay ] : [],
+				hoveredPoint,
 				hoverOverlaps,
+				hoveredColor: dataset && dataset.color,
 			});
 		},
 	};
@@ -727,7 +631,7 @@
 	}
 
 	function create_main_fragment(component, ctx) {
-		var svg, if_block_anchor, if_block_1_anchor, if_block_2_anchor, if_block_3_anchor, if_block_4_anchor, each_anchor, if_block_6_anchor, each_1_blocks_1 = [], each_1_lookup = blankObject(), svg_viewBox_value, current;
+		var svg, if_block_anchor, if_block_1_anchor, if_block_2_anchor, if_block_3_anchor, g, g_1, if_block_6_anchor, svg_viewBox_value;
 
 		var if_block = (!ctx.hoverOverlaps.maxYLabel) && create_if_block(component, ctx);
 
@@ -754,6 +658,14 @@
 			each_blocks[i] = create_each_block_2(component, get_each_context_2(ctx, each_value_2, i));
 		}
 
+		var each_value_4 = ctx.datasets;
+
+		var each_1_blocks = [];
+
+		for (var i = 0; i < each_value_4.length; i += 1) {
+			each_1_blocks[i] = create_each_block_4(component, get_each_1_context(ctx, each_value_4, i));
+		}
+
 		function select_block_type_1(ctx) {
 			if (ctx.bottomFrame === 'ticks') return create_if_block_6;
 			if (ctx.bottomFrame === 'line') return create_if_block_7;
@@ -763,15 +675,7 @@
 		var current_block_type_1 = select_block_type_1(ctx);
 		var if_block_6 = current_block_type_1 && current_block_type_1(component, ctx);
 
-		var each_value_6 = ctx.hoveredPoints;
-
-		const get_key = ctx => (ctx.hoveredPoint.x / ctx.minsAndMaxes.maxX) + (ctx.hoveredPoint.y / ctx.minsAndMaxes.maxY);
-
-		for (var i = 0; i < each_value_6.length; i += 1) {
-			let child_ctx = get_each_1_context(ctx, each_value_6, i);
-			let key = get_key(child_ctx);
-			each_1_blocks_1[i] = each_1_lookup[key] = create_each_block_6(component, key, child_ctx);
-		}
+		var if_block_8 = (ctx.hoveredPoint) && create_if_block_8(component, ctx);
 
 		return {
 			c() {
@@ -785,17 +689,23 @@
 				if (if_block_3) if_block_3.c();
 				if_block_3_anchor = createComment();
 				if (if_block_4) if_block_4.c();
-				if_block_4_anchor = createComment();
+				g = createSvgElement("g");
 
 				for (var i = 0; i < each_blocks.length; i += 1) {
 					each_blocks[i].c();
 				}
 
-				each_anchor = createComment();
+				g_1 = createSvgElement("g");
+
+				for (var i = 0; i < each_1_blocks.length; i += 1) {
+					each_1_blocks[i].c();
+				}
+
 				if (if_block_6) if_block_6.c();
 				if_block_6_anchor = createComment();
-
-				for (i = 0; i < each_1_blocks_1.length; i += 1) each_1_blocks_1[i].c();
+				if (if_block_8) if_block_8.c();
+				setAttribute(g, "fill-opacity", "0");
+				setAttribute(g_1, "fill-opacity", ctx.dataOpacity);
 				setAttribute(svg, "xmlns", "http://www.w3.org/2000/svg");
 				setAttribute(svg, "viewBox", svg_viewBox_value = "0 0 " + ctx.width + " " + ctx.height);
 			},
@@ -811,19 +721,21 @@
 				if (if_block_3) if_block_3.i(svg, null);
 				append(svg, if_block_3_anchor);
 				if (if_block_4) if_block_4.m(svg, null);
-				append(svg, if_block_4_anchor);
+				append(svg, g);
 
 				for (var i = 0; i < each_blocks.length; i += 1) {
-					each_blocks[i].m(svg, null);
+					each_blocks[i].m(g, null);
 				}
 
-				append(svg, each_anchor);
+				append(svg, g_1);
+
+				for (var i = 0; i < each_1_blocks.length; i += 1) {
+					each_1_blocks[i].m(g_1, null);
+				}
+
 				if (if_block_6) if_block_6.m(svg, null);
 				append(svg, if_block_6_anchor);
-
-				for (i = 0; i < each_1_blocks_1.length; i += 1) each_1_blocks_1[i].i(svg, null);
-
-				current = true;
+				if (if_block_8) if_block_8.i(svg, null);
 			},
 
 			p(changed, ctx) {
@@ -901,10 +813,10 @@
 					if (if_block_4) if_block_4.d(1);
 					if_block_4 = current_block_type && current_block_type(component, ctx);
 					if (if_block_4) if_block_4.c();
-					if (if_block_4) if_block_4.m(svg, if_block_4_anchor);
+					if (if_block_4) if_block_4.m(svg, g);
 				}
 
-				if (changed.datasets || changed.calculatePlotX || changed.calculatePlotY || changed.pointSize || changed.dataOpacity) {
+				if (changed.datasets || changed.pointSize || changed.calculatePlotX || changed.calculatePlotY) {
 					each_value_2 = ctx.datasets;
 
 					for (var i = 0; i < each_value_2.length; i += 1) {
@@ -915,7 +827,7 @@
 						} else {
 							each_blocks[i] = create_each_block_2(component, child_ctx);
 							each_blocks[i].c();
-							each_blocks[i].m(svg, each_anchor);
+							each_blocks[i].m(g, null);
 						}
 					}
 
@@ -923,6 +835,31 @@
 						each_blocks[i].d(1);
 					}
 					each_blocks.length = each_value_2.length;
+				}
+
+				if (changed.datasets || changed.calculatePlotX || changed.calculatePlotY || changed.hoveredPoint || changed.pointSize) {
+					each_value_4 = ctx.datasets;
+
+					for (var i = 0; i < each_value_4.length; i += 1) {
+						const child_ctx = get_each_1_context(ctx, each_value_4, i);
+
+						if (each_1_blocks[i]) {
+							each_1_blocks[i].p(changed, child_ctx);
+						} else {
+							each_1_blocks[i] = create_each_block_4(component, child_ctx);
+							each_1_blocks[i].c();
+							each_1_blocks[i].m(g_1, null);
+						}
+					}
+
+					for (; i < each_1_blocks.length; i += 1) {
+						each_1_blocks[i].d(1);
+					}
+					each_1_blocks.length = each_value_4.length;
+				}
+
+				if (changed.dataOpacity) {
+					setAttribute(g_1, "fill-opacity", ctx.dataOpacity);
 				}
 
 				if (current_block_type_1 === (current_block_type_1 = select_block_type_1(ctx)) && if_block_6) {
@@ -934,23 +871,27 @@
 					if (if_block_6) if_block_6.m(svg, if_block_6_anchor);
 				}
 
-				const each_value_6 = ctx.hoveredPoints;
+				if (ctx.hoveredPoint) {
+					if (if_block_8) {
+						if_block_8.p(changed, ctx);
+					} else {
+						if_block_8 = create_if_block_8(component, ctx);
+						if (if_block_8) if_block_8.c();
+					}
 
-				groupOutros();
-				each_1_blocks_1 = updateKeyedEach(each_1_blocks_1, component, changed, get_key, 1, ctx, each_value_6, each_1_lookup, svg, outroAndDestroyBlock, create_each_block_6, "i", null, get_each_1_context);
+					if_block_8.i(svg, null);
+				} else if (if_block_8) {
+					groupOutros();
+					if_block_8.o(function() {
+						if_block_8.d(1);
+						if_block_8 = null;
+					});
+				}
 
-				if ((!current || changed.width || changed.height) && svg_viewBox_value !== (svg_viewBox_value = "0 0 " + ctx.width + " " + ctx.height)) {
+				if ((changed.width || changed.height) && svg_viewBox_value !== (svg_viewBox_value = "0 0 " + ctx.width + " " + ctx.height)) {
 					setAttribute(svg, "viewBox", svg_viewBox_value);
 				}
 			},
-
-			i(target, anchor) {
-				if (current) return;
-
-				this.m(target, anchor);
-			},
-
-			o: run,
 
 			d(detach) {
 				if (detach) {
@@ -965,9 +906,10 @@
 
 				destroyEach(each_blocks, detach);
 
-				if (if_block_6) if_block_6.d();
+				destroyEach(each_1_blocks, detach);
 
-				for (i = 0; i < each_1_blocks_1.length; i += 1) each_1_blocks_1[i].d();
+				if (if_block_6) if_block_6.d();
+				if (if_block_8) if_block_8.d();
 			}
 		};
 	}
@@ -1312,9 +1254,9 @@
 		};
 	}
 
-	// (65:2) {#each datasets as dataset}
+	// (69:3) {#each datasets as dataset}
 	function create_each_block(component, ctx) {
-		var each_anchor;
+		var g, g_stroke_value;
 
 		var each_value_1 = ctx.dataset.points;
 
@@ -1326,23 +1268,24 @@
 
 		return {
 			c() {
+				g = createSvgElement("g");
+
 				for (var i = 0; i < each_blocks.length; i += 1) {
 					each_blocks[i].c();
 				}
-
-				each_anchor = createComment();
+				setAttribute(g, "stroke", g_stroke_value = ctx.dataset.color);
 			},
 
 			m(target, anchor) {
-				for (var i = 0; i < each_blocks.length; i += 1) {
-					each_blocks[i].m(target, anchor);
-				}
+				insert(target, g, anchor);
 
-				insert(target, each_anchor, anchor);
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(g, null);
+				}
 			},
 
 			p(changed, ctx) {
-				if (changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.datasets || changed.tickWidth || changed.dataOpacity) {
+				if (changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.datasets) {
 					each_value_1 = ctx.dataset.points;
 
 					for (var i = 0; i < each_value_1.length; i += 1) {
@@ -1353,7 +1296,7 @@
 						} else {
 							each_blocks[i] = create_each_block_1(component, child_ctx);
 							each_blocks[i].c();
-							each_blocks[i].m(each_anchor.parentNode, each_anchor);
+							each_blocks[i].m(g, null);
 						}
 					}
 
@@ -1362,21 +1305,25 @@
 					}
 					each_blocks.length = each_value_1.length;
 				}
+
+				if ((changed.datasets) && g_stroke_value !== (g_stroke_value = ctx.dataset.color)) {
+					setAttribute(g, "stroke", g_stroke_value);
+				}
 			},
 
 			d(detach) {
-				destroyEach(each_blocks, detach);
-
 				if (detach) {
-					detachNode(each_anchor);
+					detachNode(g);
 				}
+
+				destroyEach(each_blocks, detach);
 			}
 		};
 	}
 
-	// (66:3) {#each dataset.points as point}
+	// (71:5) {#each dataset.points as point}
 	function create_each_block_1(component, ctx) {
-		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
+		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
 		return {
 			c() {
@@ -1385,9 +1332,6 @@
 				setAttribute(line, "x2", line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px");
 				setAttribute(line, "y1", line_y__value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.point.y) + "px");
-				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
-				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
-				setAttribute(line, "stroke-opacity", ctx.dataOpacity);
 				setAttribute(line, "class", "svelte-1cot3eq");
 			},
 
@@ -1411,18 +1355,6 @@
 				if ((changed.calculatePlotY || changed.datasets) && line_y__value_1 !== (line_y__value_1 = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
 					setAttribute(line, "y2", line_y__value_1);
 				}
-
-				if ((changed.datasets) && line_stroke_value !== (line_stroke_value = ctx.dataset.color)) {
-					setAttribute(line, "stroke", line_stroke_value);
-				}
-
-				if ((changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth + "px")) {
-					setAttribute(line, "stroke-width", line_stroke_width_value);
-				}
-
-				if (changed.dataOpacity) {
-					setAttribute(line, "stroke-opacity", ctx.dataOpacity);
-				}
 			},
 
 			d(detach) {
@@ -1435,7 +1367,7 @@
 
 	// (64:1) {#if leftFrame === 'ticks'}
 	function create_if_block_4(component, ctx) {
-		var each_anchor;
+		var g, g_stroke_width_value, g_stroke_opacity_value;
 
 		var each_value = ctx.datasets;
 
@@ -1447,23 +1379,25 @@
 
 		return {
 			c() {
+				g = createSvgElement("g");
+
 				for (var i = 0; i < each_blocks.length; i += 1) {
 					each_blocks[i].c();
 				}
-
-				each_anchor = createComment();
+				setAttribute(g, "stroke-width", g_stroke_width_value = "" + ctx.tickWidth + "px");
+				setAttribute(g, "stroke-opacity", g_stroke_opacity_value = ctx.dataOpacity * 0.5);
 			},
 
 			m(target, anchor) {
-				for (var i = 0; i < each_blocks.length; i += 1) {
-					each_blocks[i].m(target, anchor);
-				}
+				insert(target, g, anchor);
 
-				insert(target, each_anchor, anchor);
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(g, null);
+				}
 			},
 
 			p(changed, ctx) {
-				if (changed.datasets || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY || changed.tickWidth || changed.dataOpacity) {
+				if (changed.datasets || changed.leftMargin || changed.plotXMargin || changed.tickLength || changed.calculatePlotY) {
 					each_value = ctx.datasets;
 
 					for (var i = 0; i < each_value.length; i += 1) {
@@ -1474,7 +1408,7 @@
 						} else {
 							each_blocks[i] = create_each_block(component, child_ctx);
 							each_blocks[i].c();
-							each_blocks[i].m(each_anchor.parentNode, each_anchor);
+							each_blocks[i].m(g, null);
 						}
 					}
 
@@ -1483,19 +1417,27 @@
 					}
 					each_blocks.length = each_value.length;
 				}
+
+				if ((changed.tickWidth) && g_stroke_width_value !== (g_stroke_width_value = "" + ctx.tickWidth + "px")) {
+					setAttribute(g, "stroke-width", g_stroke_width_value);
+				}
+
+				if ((changed.dataOpacity) && g_stroke_opacity_value !== (g_stroke_opacity_value = ctx.dataOpacity * 0.5)) {
+					setAttribute(g, "stroke-opacity", g_stroke_opacity_value);
+				}
 			},
 
 			d(detach) {
-				destroyEach(each_blocks, detach);
-
 				if (detach) {
-					detachNode(each_anchor);
+					detachNode(g);
 				}
+
+				destroyEach(each_blocks, detach);
 			}
 		};
 	}
 
-	// (78:31) 
+	// (82:31) 
 	function create_if_block_5(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
@@ -1545,7 +1487,7 @@
 		};
 	}
 
-	// (89:1) {#each datasets as dataset}
+	// (95:2) {#each datasets as dataset}
 	function create_each_block_2(component, ctx) {
 		var each_anchor;
 
@@ -1575,7 +1517,7 @@
 			},
 
 			p(changed, ctx) {
-				if (changed.calculatePlotX || changed.datasets || changed.calculatePlotY || changed.pointSize || changed.dataOpacity) {
+				if (changed.pointSize || changed.calculatePlotX || changed.datasets || changed.calculatePlotY) {
 					each_value_3 = ctx.dataset.points;
 
 					for (var i = 0; i < each_value_3.length; i += 1) {
@@ -1607,9 +1549,9 @@
 		};
 	}
 
-	// (90:2) {#each dataset.points as point}
+	// (96:3) {#each dataset.points as point}
 	function create_each_block_3(component, ctx) {
-		var circle, circle_cx_value, circle_cy_value, circle_fill_value;
+		var circle, circle_r_value, circle_cx_value, circle_cy_value, circle_data_dataset_color_value;
 
 		return {
 			c() {
@@ -1618,11 +1560,132 @@
 
 				addListener(circle, "mouseenter", mouseenter_handler);
 				addListener(circle, "click", click_handler);
+				setAttribute(circle, "r", circle_r_value = ctx.pointSize * 3);
 				setAttribute(circle, "cx", circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px");
 				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
-				setAttribute(circle, "r", ctx.pointSize);
-				setAttribute(circle, "fill", circle_fill_value = ctx.dataset.color);
-				setAttribute(circle, "fill-opacity", ctx.dataOpacity);
+				setAttribute(circle, "data-dataset-color", circle_data_dataset_color_value = ctx.dataset.color);
+				setAttribute(circle, "class", "svelte-1cot3eq");
+			},
+
+			m(target, anchor) {
+				insert(target, circle, anchor);
+			},
+
+			p(changed, _ctx) {
+				ctx = _ctx;
+				circle._svelte.ctx = ctx;
+				if ((changed.pointSize) && circle_r_value !== (circle_r_value = ctx.pointSize * 3)) {
+					setAttribute(circle, "r", circle_r_value);
+				}
+
+				if ((changed.calculatePlotX || changed.datasets) && circle_cx_value !== (circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px")) {
+					setAttribute(circle, "cx", circle_cx_value);
+				}
+
+				if ((changed.calculatePlotY || changed.datasets) && circle_cy_value !== (circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px")) {
+					setAttribute(circle, "cy", circle_cy_value);
+				}
+
+				if ((changed.datasets) && circle_data_dataset_color_value !== (circle_data_dataset_color_value = ctx.dataset.color)) {
+					setAttribute(circle, "data-dataset-color", circle_data_dataset_color_value);
+				}
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(circle);
+				}
+
+				removeListener(circle, "mouseenter", mouseenter_handler);
+				removeListener(circle, "click", click_handler);
+			}
+		};
+	}
+
+	// (110:2) {#each datasets as dataset}
+	function create_each_block_4(component, ctx) {
+		var g, g_fill_value;
+
+		var each_value_5 = ctx.dataset.points;
+
+		var each_blocks = [];
+
+		for (var i = 0; i < each_value_5.length; i += 1) {
+			each_blocks[i] = create_each_block_5(component, get_each_context_4(ctx, each_value_5, i));
+		}
+
+		return {
+			c() {
+				g = createSvgElement("g");
+
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].c();
+				}
+				setAttribute(g, "fill", g_fill_value = ctx.dataset.color);
+			},
+
+			m(target, anchor) {
+				insert(target, g, anchor);
+
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(g, null);
+				}
+			},
+
+			p(changed, ctx) {
+				if (changed.calculatePlotX || changed.datasets || changed.calculatePlotY || changed.hoveredPoint || changed.pointSize) {
+					each_value_5 = ctx.dataset.points;
+
+					for (var i = 0; i < each_value_5.length; i += 1) {
+						const child_ctx = get_each_context_4(ctx, each_value_5, i);
+
+						if (each_blocks[i]) {
+							each_blocks[i].p(changed, child_ctx);
+						} else {
+							each_blocks[i] = create_each_block_5(component, child_ctx);
+							each_blocks[i].c();
+							each_blocks[i].m(g, null);
+						}
+					}
+
+					for (; i < each_blocks.length; i += 1) {
+						each_blocks[i].d(1);
+					}
+					each_blocks.length = each_value_5.length;
+				}
+
+				if ((changed.datasets) && g_fill_value !== (g_fill_value = ctx.dataset.color)) {
+					setAttribute(g, "fill", g_fill_value);
+				}
+			},
+
+			d(detach) {
+				if (detach) {
+					detachNode(g);
+				}
+
+				destroyEach(each_blocks, detach);
+			}
+		};
+	}
+
+	// (112:4) {#each dataset.points as point}
+	function create_each_block_5(component, ctx) {
+		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_fill_opacity_value, circle_data_dataset_color_value;
+
+		return {
+			c() {
+				circle = createSvgElement("circle");
+				circle._svelte = { component, ctx };
+
+				addListener(circle, "mouseenter", mouseenter_handler_1);
+				addListener(circle, "click", click_handler_1);
+				addListener(circle, "mouseleave", mouseleave_handler);
+				setAttribute(circle, "cx", circle_cx_value = "" + ctx.calculatePlotX(ctx.point.x) + "px");
+				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.point.y) + "px");
+				setAttribute(circle, "r", circle_r_value = ctx.point === ctx.hoveredPoint ? ctx.pointSize * 3 : ctx.pointSize);
+				setAttribute(circle, "fill-opacity", circle_fill_opacity_value = ctx.point === ctx.hoveredPoint ? 1 : 'inherit');
+				setAttribute(circle, "data-dataset-color", circle_data_dataset_color_value = ctx.dataset.color);
 				setAttribute(circle, "class", "svelte-1cot3eq");
 			},
 
@@ -1641,16 +1704,16 @@
 					setAttribute(circle, "cy", circle_cy_value);
 				}
 
-				if (changed.pointSize) {
-					setAttribute(circle, "r", ctx.pointSize);
+				if ((changed.datasets || changed.hoveredPoint || changed.pointSize) && circle_r_value !== (circle_r_value = ctx.point === ctx.hoveredPoint ? ctx.pointSize * 3 : ctx.pointSize)) {
+					setAttribute(circle, "r", circle_r_value);
 				}
 
-				if ((changed.datasets) && circle_fill_value !== (circle_fill_value = ctx.dataset.color)) {
-					setAttribute(circle, "fill", circle_fill_value);
+				if ((changed.datasets || changed.hoveredPoint) && circle_fill_opacity_value !== (circle_fill_opacity_value = ctx.point === ctx.hoveredPoint ? 1 : 'inherit')) {
+					setAttribute(circle, "fill-opacity", circle_fill_opacity_value);
 				}
 
-				if (changed.dataOpacity) {
-					setAttribute(circle, "fill-opacity", ctx.dataOpacity);
+				if ((changed.datasets) && circle_data_dataset_color_value !== (circle_data_dataset_color_value = ctx.dataset.color)) {
+					setAttribute(circle, "data-dataset-color", circle_data_dataset_color_value);
 				}
 			},
 
@@ -1659,77 +1722,83 @@
 					detachNode(circle);
 				}
 
-				removeListener(circle, "mouseenter", mouseenter_handler);
-				removeListener(circle, "click", click_handler);
+				removeListener(circle, "mouseenter", mouseenter_handler_1);
+				removeListener(circle, "click", click_handler_1);
+				removeListener(circle, "mouseleave", mouseleave_handler);
 			}
 		};
 	}
 
-	// (104:2) {#each datasets as dataset}
-	function create_each_block_4(component, ctx) {
-		var each_anchor;
+	// (133:3) {#each datasets as dataset}
+	function create_each_block_6(component, ctx) {
+		var g, g_stroke_value;
 
-		var each_value_5 = ctx.dataset.points;
+		var each_value_7 = ctx.dataset.points;
 
 		var each_blocks = [];
 
-		for (var i = 0; i < each_value_5.length; i += 1) {
-			each_blocks[i] = create_each_block_5(component, get_each_context_5(ctx, each_value_5, i));
+		for (var i = 0; i < each_value_7.length; i += 1) {
+			each_blocks[i] = create_each_block_7(component, get_each_context_6(ctx, each_value_7, i));
 		}
 
 		return {
 			c() {
+				g = createSvgElement("g");
+
 				for (var i = 0; i < each_blocks.length; i += 1) {
 					each_blocks[i].c();
 				}
-
-				each_anchor = createComment();
+				setAttribute(g, "stroke", g_stroke_value = ctx.dataset.color);
 			},
 
 			m(target, anchor) {
-				for (var i = 0; i < each_blocks.length; i += 1) {
-					each_blocks[i].m(target, anchor);
-				}
+				insert(target, g, anchor);
 
-				insert(target, each_anchor, anchor);
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(g, null);
+				}
 			},
 
 			p(changed, ctx) {
-				if (changed.calculatePlotX || changed.datasets || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth || changed.dataOpacity) {
-					each_value_5 = ctx.dataset.points;
+				if (changed.calculatePlotX || changed.datasets || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength) {
+					each_value_7 = ctx.dataset.points;
 
-					for (var i = 0; i < each_value_5.length; i += 1) {
-						const child_ctx = get_each_context_5(ctx, each_value_5, i);
+					for (var i = 0; i < each_value_7.length; i += 1) {
+						const child_ctx = get_each_context_6(ctx, each_value_7, i);
 
 						if (each_blocks[i]) {
 							each_blocks[i].p(changed, child_ctx);
 						} else {
-							each_blocks[i] = create_each_block_5(component, child_ctx);
+							each_blocks[i] = create_each_block_7(component, child_ctx);
 							each_blocks[i].c();
-							each_blocks[i].m(each_anchor.parentNode, each_anchor);
+							each_blocks[i].m(g, null);
 						}
 					}
 
 					for (; i < each_blocks.length; i += 1) {
 						each_blocks[i].d(1);
 					}
-					each_blocks.length = each_value_5.length;
+					each_blocks.length = each_value_7.length;
+				}
+
+				if ((changed.datasets) && g_stroke_value !== (g_stroke_value = ctx.dataset.color)) {
+					setAttribute(g, "stroke", g_stroke_value);
 				}
 			},
 
 			d(detach) {
-				destroyEach(each_blocks, detach);
-
 				if (detach) {
-					detachNode(each_anchor);
+					detachNode(g);
 				}
+
+				destroyEach(each_blocks, detach);
 			}
 		};
 	}
 
-	// (105:3) {#each dataset.points as point}
-	function create_each_block_5(component, ctx) {
-		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value;
+	// (135:5) {#each dataset.points as point}
+	function create_each_block_7(component, ctx) {
+		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
 		return {
 			c() {
@@ -1738,9 +1807,6 @@
 				setAttribute(line, "x2", line_x__value_1 = "" + ctx.calculatePlotX(ctx.point.x) + "px");
 				setAttribute(line, "y1", line_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
 				setAttribute(line, "y2", line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
-				setAttribute(line, "stroke", line_stroke_value = ctx.dataset.color);
-				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth + "px");
-				setAttribute(line, "stroke-opacity", ctx.dataOpacity);
 				setAttribute(line, "class", "svelte-1cot3eq");
 			},
 
@@ -1764,18 +1830,6 @@
 				if ((changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength) && line_y__value_1 !== (line_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px")) {
 					setAttribute(line, "y2", line_y__value_1);
 				}
-
-				if ((changed.datasets) && line_stroke_value !== (line_stroke_value = ctx.dataset.color)) {
-					setAttribute(line, "stroke", line_stroke_value);
-				}
-
-				if ((changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth + "px")) {
-					setAttribute(line, "stroke-width", line_stroke_width_value);
-				}
-
-				if (changed.dataOpacity) {
-					setAttribute(line, "stroke-opacity", ctx.dataOpacity);
-				}
 			},
 
 			d(detach) {
@@ -1786,69 +1840,79 @@
 		};
 	}
 
-	// (103:1) {#if bottomFrame === 'ticks'}
+	// (128:1) {#if bottomFrame === 'ticks'}
 	function create_if_block_6(component, ctx) {
-		var each_anchor;
+		var g, g_stroke_width_value, g_stroke_opacity_value;
 
-		var each_value_4 = ctx.datasets;
+		var each_value_6 = ctx.datasets;
 
 		var each_blocks = [];
 
-		for (var i = 0; i < each_value_4.length; i += 1) {
-			each_blocks[i] = create_each_block_4(component, get_each_context_4(ctx, each_value_4, i));
+		for (var i = 0; i < each_value_6.length; i += 1) {
+			each_blocks[i] = create_each_block_6(component, get_each_context_5(ctx, each_value_6, i));
 		}
 
 		return {
 			c() {
+				g = createSvgElement("g");
+
 				for (var i = 0; i < each_blocks.length; i += 1) {
 					each_blocks[i].c();
 				}
-
-				each_anchor = createComment();
+				setAttribute(g, "stroke-width", g_stroke_width_value = "" + ctx.tickWidth + "px");
+				setAttribute(g, "stroke-opacity", g_stroke_opacity_value = ctx.dataOpacity * 0.5);
 			},
 
 			m(target, anchor) {
-				for (var i = 0; i < each_blocks.length; i += 1) {
-					each_blocks[i].m(target, anchor);
-				}
+				insert(target, g, anchor);
 
-				insert(target, each_anchor, anchor);
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(g, null);
+				}
 			},
 
 			p(changed, ctx) {
-				if (changed.datasets || changed.calculatePlotX || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength || changed.tickWidth || changed.dataOpacity) {
-					each_value_4 = ctx.datasets;
+				if (changed.datasets || changed.calculatePlotX || changed.topMargin || changed.plotYMargin || changed.plotHeight || changed.tickLength) {
+					each_value_6 = ctx.datasets;
 
-					for (var i = 0; i < each_value_4.length; i += 1) {
-						const child_ctx = get_each_context_4(ctx, each_value_4, i);
+					for (var i = 0; i < each_value_6.length; i += 1) {
+						const child_ctx = get_each_context_5(ctx, each_value_6, i);
 
 						if (each_blocks[i]) {
 							each_blocks[i].p(changed, child_ctx);
 						} else {
-							each_blocks[i] = create_each_block_4(component, child_ctx);
+							each_blocks[i] = create_each_block_6(component, child_ctx);
 							each_blocks[i].c();
-							each_blocks[i].m(each_anchor.parentNode, each_anchor);
+							each_blocks[i].m(g, null);
 						}
 					}
 
 					for (; i < each_blocks.length; i += 1) {
 						each_blocks[i].d(1);
 					}
-					each_blocks.length = each_value_4.length;
+					each_blocks.length = each_value_6.length;
+				}
+
+				if ((changed.tickWidth) && g_stroke_width_value !== (g_stroke_width_value = "" + ctx.tickWidth + "px")) {
+					setAttribute(g, "stroke-width", g_stroke_width_value);
+				}
+
+				if ((changed.dataOpacity) && g_stroke_opacity_value !== (g_stroke_opacity_value = ctx.dataOpacity * 0.5)) {
+					setAttribute(g, "stroke-opacity", g_stroke_opacity_value);
 				}
 			},
 
 			d(detach) {
-				destroyEach(each_blocks, detach);
-
 				if (detach) {
-					detachNode(each_anchor);
+					detachNode(g);
 				}
+
+				destroyEach(each_blocks, detach);
 			}
 		};
 	}
 
-	// (117:33) 
+	// (146:33) 
 	function create_if_block_7(component, ctx) {
 		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1;
 
@@ -1898,62 +1962,47 @@
 		};
 	}
 
-	// (128:1) {#each hoveredPoints as hoveredPoint ((hoveredPoint.x / minsAndMaxes.maxX) + (hoveredPoint.y / minsAndMaxes.maxY))}
-	function create_each_block_6(component, key_1, ctx) {
-		var circle, circle_cx_value, circle_cy_value, circle_r_value, circle_fill_value, circle_transition, line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_value, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_value, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_fill_value, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_fill_value, text_2_x_value, text_2_transition, current;
+	// (157:1) {#if hoveredPoint}
+	function create_if_block_8(component, ctx) {
+		var line, line_x__value, line_x__value_1, line_y__value, line_y__value_1, line_stroke_width_value, line_transition, line_1, line_1_x__value, line_1_x__value_1, line_1_y__value, line_1_y__value_1, line_1_stroke_width_value, line_1_transition, text, text_1_value = ctx.formatY(ctx.hoveredPoint.y), text_1, text_y_value, text_transition, text_2, text_3_value = ctx.formatX(ctx.hoveredPoint.x), text_3, text_2_x_value, text_2_transition, current;
 
 		return {
-			key: key_1,
-
-			first: null,
-
 			c() {
-				circle = createSvgElement("circle");
 				line = createSvgElement("line");
 				line_1 = createSvgElement("line");
 				text = createSvgElement("text");
 				text_1 = createText(text_1_value);
 				text_2 = createSvgElement("text");
 				text_3 = createText(text_3_value);
-				circle._svelte = { component };
-
-				addListener(circle, "mouseleave", mouseleave_handler);
-				setAttribute(circle, "cx", circle_cx_value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
-				setAttribute(circle, "cy", circle_cy_value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
-				setAttribute(circle, "r", circle_r_value = ctx.pointSize * 3);
-				setAttribute(circle, "fill", circle_fill_value = ctx.hoveredPoint.color);
-				setAttribute(circle, "class", "svelte-1cot3eq");
 				setAttribute(line, "x1", line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin - ctx.tickLength) + "px");
 				setAttribute(line, "x2", line_x__value_1 = "" + (ctx.leftMargin - ctx.plotXMargin) + "px");
 				setAttribute(line, "y1", line_y__value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
 				setAttribute(line, "y2", line_y__value_1 = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px");
-				setAttribute(line, "stroke", line_stroke_value = ctx.hoveredPoint.color);
+				setAttribute(line, "stroke", ctx.hoveredColor);
 				setAttribute(line, "stroke-width", line_stroke_width_value = "" + ctx.tickWidth * 2 + "px");
 				setAttribute(line, "class", "svelte-1cot3eq");
 				setAttribute(line_1, "x1", line_1_x__value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
 				setAttribute(line_1, "x2", line_1_x__value_1 = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px");
 				setAttribute(line_1, "y1", line_1_y__value = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight) + "px");
 				setAttribute(line_1, "y2", line_1_y__value_1 = "" + (ctx.topMargin + ctx.plotYMargin + ctx.plotHeight + ctx.tickLength) + "px");
-				setAttribute(line_1, "stroke", line_1_stroke_value = ctx.hoveredPoint.color);
+				setAttribute(line_1, "stroke", ctx.hoveredColor);
 				setAttribute(line_1, "stroke-width", line_1_stroke_width_value = "" + ctx.tickWidth * 2 + "px");
 				setAttribute(line_1, "class", "svelte-1cot3eq");
-				setAttribute(text, "fill", text_fill_value = ctx.hoveredPoint.color);
+				setAttribute(text, "fill", ctx.hoveredColor);
 				setStyle(text, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text, "text-anchor", "end");
 				setAttribute(text, "x", ctx.yLabelX);
 				setAttribute(text, "y", text_y_value = ctx.calculatePlotY(ctx.hoveredPoint.y));
 				setAttribute(text, "dy", "4");
-				setAttribute(text_2, "fill", text_2_fill_value = ctx.hoveredPoint.color);
+				setAttribute(text_2, "fill", ctx.hoveredColor);
 				setStyle(text_2, "font-size", "" + ctx.fontSize + "px");
 				setAttribute(text_2, "text-anchor", "middle");
 				setAttribute(text_2, "x", text_2_x_value = ctx.calculatePlotX(ctx.hoveredPoint.x));
 				setAttribute(text_2, "y", ctx.xLabelY);
 				setAttribute(text_2, "dy", ctx.fontSize);
-				this.first = circle;
 			},
 
 			m(target, anchor) {
-				insert(target, circle, anchor);
 				insert(target, line, anchor);
 				insert(target, line_1, anchor);
 				insert(target, text, anchor);
@@ -1964,22 +2013,6 @@
 			},
 
 			p(changed, ctx) {
-				if ((!current || changed.calculatePlotX || changed.hoveredPoints) && circle_cx_value !== (circle_cx_value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px")) {
-					setAttribute(circle, "cx", circle_cx_value);
-				}
-
-				if ((!current || changed.calculatePlotY || changed.hoveredPoints) && circle_cy_value !== (circle_cy_value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px")) {
-					setAttribute(circle, "cy", circle_cy_value);
-				}
-
-				if ((!current || changed.pointSize) && circle_r_value !== (circle_r_value = ctx.pointSize * 3)) {
-					setAttribute(circle, "r", circle_r_value);
-				}
-
-				if ((!current || changed.hoveredPoints) && circle_fill_value !== (circle_fill_value = ctx.hoveredPoint.color)) {
-					setAttribute(circle, "fill", circle_fill_value);
-				}
-
 				if ((!current || changed.leftMargin || changed.plotXMargin || changed.tickLength) && line_x__value !== (line_x__value = "" + (ctx.leftMargin - ctx.plotXMargin - ctx.tickLength) + "px")) {
 					setAttribute(line, "x1", line_x__value);
 				}
@@ -1988,27 +2021,27 @@
 					setAttribute(line, "x2", line_x__value_1);
 				}
 
-				if ((!current || changed.calculatePlotY || changed.hoveredPoints) && line_y__value !== (line_y__value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px")) {
+				if ((!current || changed.calculatePlotY || changed.hoveredPoint) && line_y__value !== (line_y__value = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px")) {
 					setAttribute(line, "y1", line_y__value);
 				}
 
-				if ((!current || changed.calculatePlotY || changed.hoveredPoints) && line_y__value_1 !== (line_y__value_1 = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px")) {
+				if ((!current || changed.calculatePlotY || changed.hoveredPoint) && line_y__value_1 !== (line_y__value_1 = "" + ctx.calculatePlotY(ctx.hoveredPoint.y) + "px")) {
 					setAttribute(line, "y2", line_y__value_1);
 				}
 
-				if ((!current || changed.hoveredPoints) && line_stroke_value !== (line_stroke_value = ctx.hoveredPoint.color)) {
-					setAttribute(line, "stroke", line_stroke_value);
+				if (!current || changed.hoveredColor) {
+					setAttribute(line, "stroke", ctx.hoveredColor);
 				}
 
 				if ((!current || changed.tickWidth) && line_stroke_width_value !== (line_stroke_width_value = "" + ctx.tickWidth * 2 + "px")) {
 					setAttribute(line, "stroke-width", line_stroke_width_value);
 				}
 
-				if ((!current || changed.calculatePlotX || changed.hoveredPoints) && line_1_x__value !== (line_1_x__value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px")) {
+				if ((!current || changed.calculatePlotX || changed.hoveredPoint) && line_1_x__value !== (line_1_x__value = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px")) {
 					setAttribute(line_1, "x1", line_1_x__value);
 				}
 
-				if ((!current || changed.calculatePlotX || changed.hoveredPoints) && line_1_x__value_1 !== (line_1_x__value_1 = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px")) {
+				if ((!current || changed.calculatePlotX || changed.hoveredPoint) && line_1_x__value_1 !== (line_1_x__value_1 = "" + ctx.calculatePlotX(ctx.hoveredPoint.x) + "px")) {
 					setAttribute(line_1, "x2", line_1_x__value_1);
 				}
 
@@ -2020,20 +2053,20 @@
 					setAttribute(line_1, "y2", line_1_y__value_1);
 				}
 
-				if ((!current || changed.hoveredPoints) && line_1_stroke_value !== (line_1_stroke_value = ctx.hoveredPoint.color)) {
-					setAttribute(line_1, "stroke", line_1_stroke_value);
+				if (!current || changed.hoveredColor) {
+					setAttribute(line_1, "stroke", ctx.hoveredColor);
 				}
 
 				if ((!current || changed.tickWidth) && line_1_stroke_width_value !== (line_1_stroke_width_value = "" + ctx.tickWidth * 2 + "px")) {
 					setAttribute(line_1, "stroke-width", line_1_stroke_width_value);
 				}
 
-				if ((!current || changed.formatY || changed.hoveredPoints) && text_1_value !== (text_1_value = ctx.formatY(ctx.hoveredPoint.y))) {
+				if ((!current || changed.formatY || changed.hoveredPoint) && text_1_value !== (text_1_value = ctx.formatY(ctx.hoveredPoint.y))) {
 					setData(text_1, text_1_value);
 				}
 
-				if ((!current || changed.hoveredPoints) && text_fill_value !== (text_fill_value = ctx.hoveredPoint.color)) {
-					setAttribute(text, "fill", text_fill_value);
+				if (!current || changed.hoveredColor) {
+					setAttribute(text, "fill", ctx.hoveredColor);
 				}
 
 				if (!current || changed.fontSize) {
@@ -2044,23 +2077,23 @@
 					setAttribute(text, "x", ctx.yLabelX);
 				}
 
-				if ((!current || changed.calculatePlotY || changed.hoveredPoints) && text_y_value !== (text_y_value = ctx.calculatePlotY(ctx.hoveredPoint.y))) {
+				if ((!current || changed.calculatePlotY || changed.hoveredPoint) && text_y_value !== (text_y_value = ctx.calculatePlotY(ctx.hoveredPoint.y))) {
 					setAttribute(text, "y", text_y_value);
 				}
 
-				if ((!current || changed.formatX || changed.hoveredPoints) && text_3_value !== (text_3_value = ctx.formatX(ctx.hoveredPoint.x))) {
+				if ((!current || changed.formatX || changed.hoveredPoint) && text_3_value !== (text_3_value = ctx.formatX(ctx.hoveredPoint.x))) {
 					setData(text_3, text_3_value);
 				}
 
-				if ((!current || changed.hoveredPoints) && text_2_fill_value !== (text_2_fill_value = ctx.hoveredPoint.color)) {
-					setAttribute(text_2, "fill", text_2_fill_value);
+				if (!current || changed.hoveredColor) {
+					setAttribute(text_2, "fill", ctx.hoveredColor);
 				}
 
 				if (!current || changed.fontSize) {
 					setStyle(text_2, "font-size", "" + ctx.fontSize + "px");
 				}
 
-				if ((!current || changed.calculatePlotX || changed.hoveredPoints) && text_2_x_value !== (text_2_x_value = ctx.calculatePlotX(ctx.hoveredPoint.x))) {
+				if ((!current || changed.calculatePlotX || changed.hoveredPoint) && text_2_x_value !== (text_2_x_value = ctx.calculatePlotX(ctx.hoveredPoint.x))) {
 					setAttribute(text_2, "x", text_2_x_value);
 				}
 
@@ -2076,12 +2109,6 @@
 			i(target, anchor) {
 				if (current) return;
 				if (component.root._intro) {
-					if (circle_transition) circle_transition.invalidate();
-
-					component.root._aftercreate.push(() => {
-						if (!circle_transition) circle_transition = wrapTransition(component, circle, fade, {duration: 100}, true);
-						circle_transition.run(1);
-					});
 					if (line_transition) line_transition.invalidate();
 
 					component.root._aftercreate.push(() => {
@@ -2113,13 +2140,7 @@
 			o(outrocallback) {
 				if (!current) return;
 
-				outrocallback = callAfter(outrocallback, 5);
-
-				if (!circle_transition) circle_transition = wrapTransition(component, circle, fade, {duration: 100}, false);
-				circle_transition.run(0, () => {
-					outrocallback();
-					circle_transition = null;
-				});
+				outrocallback = callAfter(outrocallback, 4);
 
 				if (!line_transition) line_transition = wrapTransition(component, line, fade, {duration: 200}, false);
 				line_transition.run(0, () => {
@@ -2150,12 +2171,6 @@
 
 			d(detach) {
 				if (detach) {
-					detachNode(circle);
-				}
-
-				removeListener(circle, "mouseleave", mouseleave_handler);
-				if (detach) {
-					if (circle_transition) circle_transition.abort();
 					detachNode(line);
 					if (line_transition) line_transition.abort();
 					detachNode(line_1);
@@ -2213,7 +2228,7 @@
 		component.hover(ctx.point, ctx.dataset);
 	}
 
-	function get_each_context_4(ctx, list, i) {
+	function get_each_1_context(ctx, list, i) {
 		const child_ctx = Object.create(ctx);
 		child_ctx.dataset = list[i];
 		child_ctx.each_value_4 = list;
@@ -2221,7 +2236,7 @@
 		return child_ctx;
 	}
 
-	function get_each_context_5(ctx, list, i) {
+	function get_each_context_4(ctx, list, i) {
 		const child_ctx = Object.create(ctx);
 		child_ctx.point = list[i];
 		child_ctx.each_value_5 = list;
@@ -2229,12 +2244,16 @@
 		return child_ctx;
 	}
 
-	function get_each_1_context(ctx, list, i) {
-		const child_ctx = Object.create(ctx);
-		child_ctx.hoveredPoint = list[i];
-		child_ctx.each_value_6 = list;
-		child_ctx.hoveredPoint_index = i;
-		return child_ctx;
+	function mouseenter_handler_1(event) {
+		const { component, ctx } = this._svelte;
+
+		component.hover(ctx.point, ctx.dataset);
+	}
+
+	function click_handler_1(event) {
+		const { component, ctx } = this._svelte;
+
+		component.hover(ctx.point, ctx.dataset);
 	}
 
 	function mouseleave_handler(event) {
@@ -2243,11 +2262,27 @@
 		component.hover(null);
 	}
 
+	function get_each_context_5(ctx, list, i) {
+		const child_ctx = Object.create(ctx);
+		child_ctx.dataset = list[i];
+		child_ctx.each_value_6 = list;
+		child_ctx.dataset_index_3 = i;
+		return child_ctx;
+	}
+
+	function get_each_context_6(ctx, list, i) {
+		const child_ctx = Object.create(ctx);
+		child_ctx.point = list[i];
+		child_ctx.each_value_7 = list;
+		child_ctx.point_index_3 = i;
+		return child_ctx;
+	}
+
 	function ScatterGraph(options) {
 		init(this, options);
 		this.refs = {};
 		this._state = assign(data(), options.data);
-		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, datasets: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1, plotXMargin: 1, tickLength: 1, labelBuffer: 1, plotYMargin: 1, hoveredPoints: 1 }, this._state);
+		this._recompute({ width: 1, leftMargin: 1, rightMargin: 1, height: 1, bottomMargin: 1, topMargin: 1, datasets: 1, minsAndMaxes: 1, plotWidth: 1, dataRanges: 1, plotHeight: 1, plotXMargin: 1, tickLength: 1, labelBuffer: 1, plotYMargin: 1, hoveredPoint: 1 }, this._state);
 		this._intro = true;
 
 		if (!document.getElementById("svelte-1cot3eq-style")) add_css();
@@ -2298,7 +2333,7 @@
 			if (this._differs(state.xLabelY, (state.xLabelY = xLabelY(state)))) changed.xLabelY = true;
 		}
 
-		if (changed.hoveredPoints) {
+		if (changed.hoveredPoint) {
 			if (this._differs(state.dataOpacity, (state.dataOpacity = dataOpacity(state)))) changed.dataOpacity = true;
 		}
 	};
