@@ -92,33 +92,37 @@
 
 
 	<g fill-opacity=0>
-		{#each datasets as dataset}
-			{#each dataset.points as point}
+		{#each datasets as dataset, datasetIndex}
+			{#each dataset.points as point, pointIndex}
 				<circle
 					r={pointSize * 3}
 					cx={calculatePlotX(point.x)}px
 					cy={calculatePlotY(point.y)}px
-					on:mouseenter="hover(point, dataset)"
+					on:mousemove="calculateBestHover(event)"
 					on:click="hover(point, dataset)"
-					data-dataset-color={dataset.color}
+					data-dataset-index={datasetIndex}
+					data-point-index={pointIndex}
 				/>
 			{/each}
 		{/each}
 	</g>
 
 	<g fill-opacity={dataOpacity}>
-		{#each datasets as dataset}
+		{#each datasets as dataset, datasetIndex}
 			<g fill={dataset.color}>
-				{#each dataset.points as point}
+				{#each dataset.points as point, pointIndex}
 					<circle
 						cx={calculatePlotX(point.x)}px
 						cy={calculatePlotY(point.y)}px
 						r={point === hoveredPoint ? pointSize * 3 : pointSize}
 						fill-opacity={point === hoveredPoint ? 1 : 'inherit'}
-						on:mouseenter="hover(point, dataset)"
+						on:mousemove="calculateBestHover(event)"
 						on:click="hover(point, dataset)"
 						on:mouseleave=hover(null)
-						data-dataset-color={dataset.color}
+						data-dataset-index={datasetIndex}
+						data-point-index={pointIndex}
+						data-actual-point
+						data-hovered={point === hoveredPoint}
 					/>
 				{/each}
 			</g>
@@ -205,7 +209,7 @@
 	line {
 		transition: stroke-opacity 400ms;
 	}
-	circle {
+	circle[data-hovered=false] {
 		transition: fill-opacity 400ms;
 	}
 </style>
@@ -270,8 +274,44 @@ export default {
 		}
 	},
 	methods: {
-		calculateBestHover() {
+		calculateBestHover(event) {
+			const { clientX, clientY } = event
 
+			let cursorIsDirectlyOverPoints = false
+			const relevantPoints = document.elementsFromPoint(clientX, clientY).filter(element => {
+				cursorIsDirectlyOverPoints = cursorIsDirectlyOverPoints || !!element.dataset.actualPoint
+				return `pointIndex` in element.dataset && `datasetIndex` in element.dataset
+			}).filter(
+				element => cursorIsDirectlyOverPoints ? element.dataset.actualPoint : !element.dataset.actualPoint
+			)
+
+			const currentlyHoveredPoint = this.get().hoveredPoint
+			const setHoverPoint = element => {
+				const datasetIndex = parseInt(element.dataset.datasetIndex, 10)
+				const pointIndex = parseInt(element.dataset.pointIndex, 10)
+				const dataset = this.get().datasets[datasetIndex]
+				const point = dataset.points[pointIndex]
+				if (point !== currentlyHoveredPoint) {
+					this.hover(point, dataset)
+				}
+			}
+
+			if (relevantPoints.length === 1) {
+				setHoverPoint(relevantPoints[0])
+			} else if (relevantPoints.length > 1) {
+				const pointsToSort = relevantPoints.map(element => {
+					const { x, y } = element.getBoundingClientRect()
+					const xDiff = Math.abs(x - clientX)
+					const yDiff = Math.abs(y - clientY)
+					return {
+						diff: xDiff + yDiff,
+						element,
+					}
+				})
+
+				pointsToSort.sort((a, b) => a.diff - b.diff)
+				setHoverPoint(pointsToSort[0].element)
+			}
 		},
 		hover(hoveredPoint, dataset = null) {
 			const { calculatePlotX, calculatePlotY } = this.get()
