@@ -11,15 +11,21 @@
 	--weightColor: #0F8F9B;
 
 
-	--bodyPadding: 16px;
+	--bodyPadding: 32px;
 	--bodyMaxWidth: 600px;
+}
+
+@media (max-width: 500px) {
+	:root {
+		--bodyPadding: 16px;
+	}
 }
 
 body {
 	margin-left: auto;
 	margin-right: auto;
 	margin-top: 0;
-	margin-bottom: 0;
+	margin-bottom: 16px;
 
 	padding: var(--bodyPadding);
 
@@ -28,6 +34,8 @@ body {
 	font-family: "Lato", "Helvetica Neue", Helvetica;
 	color: var(--black);
 	background-color: var(--white);
+
+	box-shadow: 0 5px 20px #e4e4e4;
 }
 
 h1, h2, h3 {
