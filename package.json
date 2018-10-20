@@ -19,7 +19,6 @@
     "camelcase": "5.0.0",
     "date-fns": "1.29.0",
     "neat-csv": "3.0.0",
-    "nodemon": "1.18.4",
     "regex-fun": "2.0.2",
     "rollup": "0.66.4",
     "rollup-plugin-commonjs": "9.1.8",
