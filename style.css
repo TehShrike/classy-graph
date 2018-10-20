@@ -1,4 +1,16 @@
 :root {
+	--black: #333333;
+	--white: #ffffff;
+	--gray: #909090;
+
+
+	--cadColor: #FF8315;
+	--gbpColor: #12D32A;
+	--usdColor: #1F45AC;
+
+	--weightColor: #0F8F9B;
+
+
 	--bodyPadding: 16px;
 	--bodyMaxWidth: 600px;
 }
@@ -18,7 +30,36 @@ body {
 	background-color: var(--white);
 }
 
-h1, h2 {
+h1, h2, h3 {
 	margin-top: 8px;
 	margin-bottom: 8px;
+	padding-top: 8px;
+
+	text-align: center;
+}
+
+h1 {
+	font-size: 32px;
+}
+
+h2 {
+	font-size: 26px;
+}
+
+h3 {
+	font-size: 20px;
+}
+
+.light {
+	color: var(--gray);
+}
+
+blockquote {
+	padding-left: 32px;
+	color: var(--gray);
+}
+
+hr {
+	margin-top: 32px;
+	margin-bottom: 32px;
 }
