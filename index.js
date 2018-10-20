@@ -25,16 +25,16 @@ main()
 async function setUpWeightGraph(doc) {
 	const points = await getWeightDataPoints()
 
-	const weightRadioButtons = doc.querySelectorAll(`input[name=weight]`)
+	const weightRadioButtons = Array.from(doc.querySelectorAll(`input[name=weight]`))
 
-	const getCurrentDataset = () => {
-		const currentlyChecked = Array.prototype.filter.call(weightRadioButtons, input => input.checked)
-			.reduce((_, input) => input.value, `year`)
-		return {
-			color: `#139090`,
-			points: points[currentlyChecked],
-		}
-	}
+	const getCurrentlyCheckedDateRange = () => weightRadioButtons
+		.filter(input => input.checked)
+		.reduce((_, input) => input.value, `year`)
+
+	const getCurrentDataset = () => ({
+		color: `#139090`,
+		points: points[getCurrentlyCheckedDateRange()],
+	})
 
 	const graph = new ScatterGraph({
 		target: doc.getElementById(`graph-target`),
