@@ -1,8 +1,9 @@
 {
   "name": "classy-graph",
   "version": "1.0.0",
-  "description": "Classy graphs",
+  "description": "A classy scatter graph",
   "main": "index.js",
+  "svelte": "ScatterGraph.html",
   "scripts": {
     "test": "echo \"Error: no test specified :-(\" && exit 0",
     "build": "node big-mac-data/process.js && rollup -c",
