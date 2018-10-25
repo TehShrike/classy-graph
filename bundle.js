@@ -3507,7 +3507,7 @@
 
 	const { getSheet } = browserBuild;
 
-	const pad2 = number => number < 10 ? `0` + number : number;
+	const pad2 = number => number < 10 ? `0${ number }` : number.toString();
 	const formatNumberAsDate = timestamp => {
 		const date = new Date(timestamp);
 		return `${ date.getFullYear() }-${ pad2(date.getMonth() + 1) }-${ pad2(date.getDate()) }`
@@ -3597,7 +3597,11 @@
 		const digits = /(\d+)/;
 		const stupidDate = regexFun.combine(/^/, digits, `/`, digits, `/`, digits, ` `, digits, `:`, digits, `:`, digits, /$/);
 		const mostlyIsoDate = regexFun.combine(/^/, digits, `-`, digits, `-`, digits, ` `, digits, `:`, digits, /$/);
-		const toDate = (...stringParams) => new Date(...stringParams.map(str => parseInt(str, 10))).valueOf();
+		const toDate = (...stringParams) => {
+			const [ year, month, ...rest ] = stringParams.map(str => parseInt(str, 10));
+
+			return new Date(year, month - 1, ...rest).valueOf()
+		};
 		const parseStupidDateOrIso = dateString => {
 			const match = dateString.match(stupidDate);
 			if (match) {
@@ -3625,6 +3629,7 @@
 		const year = allPoints.filter(({ x: timestamp }) => timestamp > yearAgo);
 
 		return {
+			allTime: allPoints,
 			year,
 			threeMonths: year.filter(({ x: timestamp }) => timestamp > threeMonthsAgo),
 		}
