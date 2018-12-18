@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A classy scatter graph",
   "main": "index.js",
-  "svelte": "ScatterGraph.html",
+  "svelte": "ScatterGraph.svelte",
   "scripts": {
     "test": "echo \"Error: no test specified :-(\" && exit 0",
     "build": "node big-mac-data/process.js && rollup -c",
@@ -25,10 +25,11 @@
     "rollup-plugin-commonjs": "9.1.8",
     "rollup-plugin-json": "3.1.0",
     "rollup-plugin-node-resolve": "3.4.0",
-    "rollup-plugin-svelte": "4.3.2",
+    "rollup-plugin-svelte": "5.0.0",
     "sheetsy": "2.1.3",
-    "svelte": "2.13.5",
-    "svelte-transitions": "1.2.0"
+    "svelte": "3.0.0-alpha6",
+    "svelte-transitions-fade": "1.0.0",
+    "warg": "1.1.0"
   },
   "dependencies": {}
 }

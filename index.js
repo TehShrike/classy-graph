@@ -1,4 +1,4 @@
-import ScatterGraph from './ScatterGraph.html'
+import ScatterGraph from './ScatterGraph.svelte'
 import bigMacData from './big-mac.json'
 
 import r from 'regex-fun'
@@ -38,7 +38,7 @@ async function setUpWeightGraph(doc) {
 
 	const graph = new ScatterGraph({
 		target: doc.getElementById(`graph-target`),
-		data: {
+		props: {
 			datasets: [ getCurrentDataset() ],
 			bottomFrame: `ticks`,
 			leftFrame: `ticks`,
@@ -53,9 +53,7 @@ async function setUpWeightGraph(doc) {
 	weightRadioButtons.forEach(element => {
 		element.addEventListener(`change`, () => {
 			if (element.checked) {
-				graph.set({
-					datasets: [ getCurrentDataset() ],
-				})
+				graph.datasets = [ getCurrentDataset() ]
 			}
 		})
 	})
@@ -82,7 +80,7 @@ function setUpBigMacGraph(doc) {
 
 	new ScatterGraph({
 		target: doc.getElementById(`big-mac-target`),
-		data: {
+		props: {
 			datasets: bigMacDatasets,
 			formatX: formatNumberAsDate,
 			formatY: y => y.toFixed(2),
