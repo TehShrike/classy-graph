@@ -6,7 +6,7 @@ const isoZones = new Set([ `CAN`, `GBR`, `USA` ])
 const relative = path => require(`path`).join(__dirname, path)
 
 async function main() {
-	const csv = require(`fs`).readFileSync(relative(`./downloaded-2018-10-13.csv`), { encoding: `utf8` })
+	const csv = require(`fs`).readFileSync(relative(`./downloaded-2020-07-09.csv`), { encoding: `utf8` })
 
 	const data = await neatCsv(csv, {
 		mapHeaders: toCamelCase,
