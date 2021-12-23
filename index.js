@@ -2,8 +2,8 @@ import ScatterGraph from './ScatterGraph.html'
 import bigMacData from './big-mac.json'
 
 import r from 'regex-fun'
-import sheetsy from 'sheetsy'
-const { getSheet } = sheetsy
+// import sheetsy from 'sheetsy'
+// const { getSheet } = sheetsy
 
 
 import subtractMonths from 'date-fns/sub_months'
@@ -15,13 +15,13 @@ const formatNumberAsDate = timestamp => {
 }
 
 async function main() {
-	setUpWeightGraph(document)
+	// setUpWeightGraph(document)
 
 	setUpBigMacGraph(document)
 }
 
 main()
-
+/*
 async function setUpWeightGraph(doc) {
 	const points = await getWeightDataPoints()
 
@@ -60,7 +60,7 @@ async function setUpWeightGraph(doc) {
 		})
 	})
 }
-
+*/
 function setUpBigMacGraph(doc) {
 	const colors = {
 		CAD: `var(--cadColor)`,
@@ -75,9 +75,9 @@ function setUpBigMacGraph(doc) {
 				({ date, usdCost }) => ({
 					x: new Date(date).valueOf(),
 					y: usdCost,
-				})
+				}),
 			),
-		})
+		}),
 	)
 
 	new ScatterGraph({
@@ -90,7 +90,7 @@ function setUpBigMacGraph(doc) {
 		},
 	})
 }
-
+/*
 async function getWeightDataPoints() {
 	const documentId = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`
 	const sheet1Id = `ouieeg5`
@@ -135,3 +135,4 @@ async function getWeightDataPoints() {
 		threeMonths: year.filter(({ x: timestamp }) => timestamp > threeMonthsAgo),
 	}
 }
+*/
