@@ -2768,357 +2768,6 @@
 		USD: USD
 	};
 
-	var regexSource = regex => regex instanceof RegExp ? regex.source : regex;
-
-	const closingCharacters = {
-		'(': ')',
-		'[': ']',
-	};
-
-	var isAtomic = function isAtomic(regex) {
-		const string = regexSource(regex);
-
-		return /^\w$/.test(string) || enclosedByTopLevelCharacters(string)
-	};
-
-	function enclosedByTopLevelCharacters(string) {
-		const openingCharacter = string[0];
-		const closingCharacter = closingCharacters[openingCharacter];
-
-
-		const closedByAppropriateCharacter = closingCharacter !== undefined
-			&& string[string.length - 1] === closingCharacter;
-
-
-		if (!closedByAppropriateCharacter) {
-			return false
-		}
-
-		return !isClosedBeforeEndOfString(0, string, openingCharacter, closingCharacter)
-	}
-
-
-	function isClosedBeforeEndOfString(depth, string, openingCharacter, closingCharacter) {
-		if (string.length === 1 && string[0] === closingCharacter && depth === 1) {
-			return false
-		}
-		const [ nextCharacter, ...restOfCharacters ] = string;
-		const newDepth = calculateNewDepth(depth, openingCharacter, closingCharacter, nextCharacter);
-
-		if (newDepth === 0) {
-			return true
-		}
-
-		return isClosedBeforeEndOfString(newDepth, restOfCharacters, openingCharacter, closingCharacter)
-	}
-
-	function calculateNewDepth(previousDepth, openingCharacter, closingCharacter, character) {
-		if (character === openingCharacter) {
-			return previousDepth + 1
-		} else if (character === closingCharacter) {
-			return previousDepth - 1
-		} else {
-			return previousDepth
-		}
-	}
-
-	const combine = returnsRegex((...args) => escapeInputForCombining(...args).join(''));
-	const guaranteeAtomic = regex => isAtomic(regex) ? regex : `(?:${regexSource(regex)})`;
-	const escapeRegex = str => str.replace(/[.?*+^$[\]\\(){}|-]/g, '\\$&');
-	const ifRegex = (input, ifCase, elseIfCase) => input instanceof RegExp ? ifCase(input) : elseIfCase(input);
-	const escapeInputAndReturnString = regex => ifRegex(regex, regex => regex.source, escapeRegex);
-
-	var regexFun = {
-		combine,
-		either: makeJoiningFunction('(?:', '|', ')'),
-		capture: makeJoiningFunction('(', '', ')'),
-
-		flags: (flags, ...args) => new RegExp(combine(...args).source, flags),
-
-		anyNumber: suffix('*'),
-		oneOrMore: suffix('+'),
-		optional: suffix('?'),
-		exactly: (n, ...regexes) => suffix(`{${n}}`)(...regexes),
-		atLeast: (n, ...regexes) => suffix(`{${n},}`)(...regexes),
-		between: (n, m, ...regexes) => suffix(`{${n},${m}}`)(...regexes),
-
-		anyNumberNonGreedy: suffix('*?'),
-		oneOrMoreNonGreedy: suffix('+?'),
-		optionalNonGreedy: suffix('??'),
-		exactlyNonGreedy: (n, ...regexes) => suffix(`{${n}}?`)(...regexes),
-		atLeastNonGreedy: (n, ...regexes) => suffix(`{${n},}?`)(...regexes),
-		betweenNonGreedy: (n, m, ...regexes) => suffix(`{${n},${m}}?`)(...regexes),
-	};
-
-	function removeNonCapturingGroupIfExists(regexString) {
-		const match = /^\(\?:(.+)\)$/.exec(regexString);
-		return match ? match[1] : regexString
-	}
-
-	function guaranteeNoTopLevelOrs(regexString) {
-		return regexString.indexOf('|') >= 0 ? guaranteeAtomic(regexString) : regexString
-	}
-
-	function escapeInputForCombining(...args) {
-		return args.map(escapeInputAndReturnString).map(guaranteeNoTopLevelOrs)
-	}
-
-	function returnsRegex(fn) {
-		return (...args) => ifRegex(fn(...args), regex => regex, input => new RegExp(input))
-	}
-
-	function makeJoiningFunction(openingCharacter, joinCharacter, closingCharacter) {
-		return returnsRegex((...args) => {
-			const naiveBody = escapeInputForCombining(...args).join(joinCharacter);
-			const body = isAtomic(naiveBody) ? removeNonCapturingGroupIfExists(naiveBody) : naiveBody;
-
-			return concat(openingCharacter, body, closingCharacter)
-		})
-	}
-
-	function suffix(appendCharacter) {
-		return returnsRegex((...args) => concat(guaranteeAtomic(combine(...args)), appendCharacter))
-	}
-
-	function concat(...regexes) {
-		return regexes.map(regexSource).join('')
-	}
-
-	var basicXhr = function makeXhrFunction(inputOptions) {
-		var options = Object.assign({
-			method: 'GET',
-			success: defaultSuccess,
-			parse: defaultParse,
-			serialize: defaultSerialize,
-			headers: {},
-		}, inputOptions);
-
-		return function xhr(url, body) {
-			return new Promise(function promise(resolve, reject) {
-				var request = new XMLHttpRequest();
-				request.addEventListener('load', handleResult);
-				request.addEventListener('error', reject);
-				request.addEventListener('abort', reject);
-				request.open(options.method, url);
-
-				Object.keys(options.headers).forEach(function(key) {
-					request.setRequestHeader(key, options.headers[key]);
-				});
-
-				if (typeof body === 'undefined') {
-					request.send();
-				} else {
-					request.send(options.serialize(body));
-				}
-
-				function handleResult() {
-					try {
-						var response = options.parse(request);
-
-						options.success(request) ? resolve(response) : reject(response);
-					} catch (e) {
-						reject(e);
-					}
-				}
-			})
-		}
-	};
-
-	function defaultSuccess(request) {
-		return request.status >= 200 && request.status < 400
-	}
-
-	function defaultSerialize(body) {
-		return JSON.stringify(body)
-	}
-
-	function defaultParse(request) {
-		return JSON.parse(request.responseText)
-	}
-
-	function createCommonjsModule(fn, module) {
-		return module = { exports: {} }, fn(module, module.exports), module.exports;
-	}
-
-	var urlBuilder = {
-		buildIndexUrl: function buildIndexUrl(key) {
-			return "https://spreadsheets.google.com/feeds/worksheets/" + key + "/public/basic?alt=json";
-		},
-		buildSheetUrl: function buildSheetUrl(key, sheetId) {
-			return "https://spreadsheets.google.com/feeds/list/" + key + "/" + sheetId + "/public/values?alt=json";
-		}
-	};
-
-	var orderedEntries = function orderedEntries(o) {
-		return Object.getOwnPropertyNames(o).map(function(key) {
-			return [ key, o[key] ]
-		})
-	};
-
-	var slicedToArray = function () {
-	  function sliceIterator(arr, i) {
-	    var _arr = [];
-	    var _n = true;
-	    var _d = false;
-	    var _e = undefined;
-
-	    try {
-	      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-	        _arr.push(_s.value);
-
-	        if (i && _arr.length === i) break;
-	      }
-	    } catch (err) {
-	      _d = true;
-	      _e = err;
-	    } finally {
-	      try {
-	        if (!_n && _i["return"]) _i["return"]();
-	      } finally {
-	        if (_d) throw _e;
-	      }
-	    }
-
-	    return _arr;
-	  }
-
-	  return function (arr, i) {
-	    if (Array.isArray(arr)) {
-	      return arr;
-	    } else if (Symbol.iterator in Object(arr)) {
-	      return sliceIterator(arr, i);
-	    } else {
-	      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-	    }
-	  };
-	}();
-
-	var sheetsy = createCommonjsModule(function (module) {
-		var buildIndexUrl = urlBuilder.buildIndexUrl,
-		    buildSheetUrl = urlBuilder.buildSheetUrl;
-
-
-		module.exports = function (defaultGet) {
-			function getWorkbook(key) {
-				var get$$1 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGet;
-
-				return get$$1(buildIndexUrl(key)).then(function (workbookData) {
-					var feed = workbookData.feed;
-					var sheets = feed.entry.map(function (sheetData) {
-						var selfSheetUrl = sheetData.link.find(function (link) {
-							return link.rel === 'self';
-						}).href;
-						return {
-							name: textOf(sheetData.title),
-							id: afterLastSlash(selfSheetUrl),
-							updated: textOf(sheetData.updated)
-						};
-					});
-
-					return {
-						name: textOf(feed.title),
-						updated: textOf(feed.updated),
-						authors: getAuthors(feed),
-						sheets: sheets
-					};
-				});
-			}
-
-			function getSheet(key, id) {
-				var get$$1 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGet;
-
-				return get$$1(buildSheetUrl(key, id)).then(function (sheetData) {
-					var feed = sheetData.feed;
-					var rows = feed.entry.map(function (entry) {
-						var originalCellKeysAndValues = orderedEntries(entry).filter(function (_ref) {
-							var _ref2 = slicedToArray(_ref, 1),
-							    key = _ref2[0];
-
-							return (/^gsx\$/.test(key)
-							);
-						}).map(function (_ref3) {
-							var _ref4 = slicedToArray(_ref3, 2),
-							    key = _ref4[0],
-							    value = _ref4[1];
-
-							return {
-								key: key.replace('gsx$', ''),
-								value: textOf(value)
-							};
-						});
-
-						var array = originalCellKeysAndValues.map(function (_ref5) {
-							var value = _ref5.value;
-							return value;
-						});
-
-						originalCellKeysAndValues.filter(function (_ref6) {
-							var key = _ref6.key;
-							return (/^[^_]/.test(key)
-							);
-						}).forEach(function (_ref7) {
-							var key = _ref7.key,
-							    value = _ref7.value;
-
-							array[key] = value;
-						});
-
-						return array;
-					});
-
-					return {
-						name: textOf(feed.title),
-						updated: textOf(feed.updated),
-						authors: getAuthors(feed),
-						rows: rows
-					};
-				});
-			}
-
-			function urlToKey(url) {
-				return firstCapture(/key=(.*?)(&|#|$)/, url) || firstCapture(/d\/(.*?)\/pubhtml/, url) || firstCapture(/spreadsheets\/d\/(.*?)\//, url) || toss('No key found in ' + url);
-			}
-
-			return {
-				getWorkbook: getWorkbook,
-				getSheet: getSheet,
-				urlToKey: urlToKey
-			};
-		};
-
-		var textOf = function textOf(field) {
-			return field.$t;
-		};
-
-		var getAuthors = function getAuthors(data) {
-			return data.author.map(function (_ref8) {
-				var name = _ref8.name,
-				    email = _ref8.email;
-				return {
-					name: textOf(name),
-					email: textOf(email)
-				};
-			});
-		};
-
-		var afterLastSlash = function afterLastSlash(str) {
-			return str.split('/').pop();
-		};
-
-		var firstCapture = function firstCapture(regex, str) {
-			var match = regex.exec(str);
-			return match && match[1];
-		};
-
-		var toss = function toss(message) {
-			throw new Error(message);
-		};
-	});
-
-	var indexBrowser = sheetsy(basicXhr());
-
-	var browserBuild = indexBrowser;
-
 	/**
 	 * @category Common Helpers
 	 * @summary Is the given argument an instance of Date?
@@ -3134,414 +2783,6 @@
 	 * var result = isDate('mayonnaise')
 	 * //=> false
 	 */
-	function isDate (argument) {
-	  return argument instanceof Date
-	}
-
-	var is_date = isDate;
-
-	var MILLISECONDS_IN_HOUR = 3600000;
-	var MILLISECONDS_IN_MINUTE = 60000;
-	var DEFAULT_ADDITIONAL_DIGITS = 2;
-
-	var parseTokenDateTimeDelimeter = /[T ]/;
-	var parseTokenPlainTime = /:/;
-
-	// year tokens
-	var parseTokenYY = /^(\d{2})$/;
-	var parseTokensYYY = [
-	  /^([+-]\d{2})$/, // 0 additional digits
-	  /^([+-]\d{3})$/, // 1 additional digit
-	  /^([+-]\d{4})$/ // 2 additional digits
-	];
-
-	var parseTokenYYYY = /^(\d{4})/;
-	var parseTokensYYYYY = [
-	  /^([+-]\d{4})/, // 0 additional digits
-	  /^([+-]\d{5})/, // 1 additional digit
-	  /^([+-]\d{6})/ // 2 additional digits
-	];
-
-	// date tokens
-	var parseTokenMM = /^-(\d{2})$/;
-	var parseTokenDDD = /^-?(\d{3})$/;
-	var parseTokenMMDD = /^-?(\d{2})-?(\d{2})$/;
-	var parseTokenWww = /^-?W(\d{2})$/;
-	var parseTokenWwwD = /^-?W(\d{2})-?(\d{1})$/;
-
-	// time tokens
-	var parseTokenHH = /^(\d{2}([.,]\d*)?)$/;
-	var parseTokenHHMM = /^(\d{2}):?(\d{2}([.,]\d*)?)$/;
-	var parseTokenHHMMSS = /^(\d{2}):?(\d{2}):?(\d{2}([.,]\d*)?)$/;
-
-	// timezone tokens
-	var parseTokenTimezone = /([Z+-].*)$/;
-	var parseTokenTimezoneZ = /^(Z)$/;
-	var parseTokenTimezoneHH = /^([+-])(\d{2})$/;
-	var parseTokenTimezoneHHMM = /^([+-])(\d{2}):?(\d{2})$/;
-
-	/**
-	 * @category Common Helpers
-	 * @summary Convert the given argument to an instance of Date.
-	 *
-	 * @description
-	 * Convert the given argument to an instance of Date.
-	 *
-	 * If the argument is an instance of Date, the function returns its clone.
-	 *
-	 * If the argument is a number, it is treated as a timestamp.
-	 *
-	 * If an argument is a string, the function tries to parse it.
-	 * Function accepts complete ISO 8601 formats as well as partial implementations.
-	 * ISO 8601: http://en.wikipedia.org/wiki/ISO_8601
-	 *
-	 * If all above fails, the function passes the given argument to Date constructor.
-	 *
-	 * @param {Date|String|Number} argument - the value to convert
-	 * @param {Object} [options] - the object with options
-	 * @param {0 | 1 | 2} [options.additionalDigits=2] - the additional number of digits in the extended year format
-	 * @returns {Date} the parsed date in the local time zone
-	 *
-	 * @example
-	 * // Convert string '2014-02-11T11:30:30' to date:
-	 * var result = parse('2014-02-11T11:30:30')
-	 * //=> Tue Feb 11 2014 11:30:30
-	 *
-	 * @example
-	 * // Parse string '+02014101',
-	 * // if the additional number of digits in the extended year format is 1:
-	 * var result = parse('+02014101', {additionalDigits: 1})
-	 * //=> Fri Apr 11 2014 00:00:00
-	 */
-	function parse (argument, dirtyOptions) {
-	  if (is_date(argument)) {
-	    // Prevent the date to lose the milliseconds when passed to new Date() in IE10
-	    return new Date(argument.getTime())
-	  } else if (typeof argument !== 'string') {
-	    return new Date(argument)
-	  }
-
-	  var options = dirtyOptions || {};
-	  var additionalDigits = options.additionalDigits;
-	  if (additionalDigits == null) {
-	    additionalDigits = DEFAULT_ADDITIONAL_DIGITS;
-	  } else {
-	    additionalDigits = Number(additionalDigits);
-	  }
-
-	  var dateStrings = splitDateString(argument);
-
-	  var parseYearResult = parseYear(dateStrings.date, additionalDigits);
-	  var year = parseYearResult.year;
-	  var restDateString = parseYearResult.restDateString;
-
-	  var date = parseDate(restDateString, year);
-
-	  if (date) {
-	    var timestamp = date.getTime();
-	    var time = 0;
-	    var offset;
-
-	    if (dateStrings.time) {
-	      time = parseTime(dateStrings.time);
-	    }
-
-	    if (dateStrings.timezone) {
-	      offset = parseTimezone(dateStrings.timezone);
-	    } else {
-	      // get offset accurate to hour in timezones that change offset
-	      offset = new Date(timestamp + time).getTimezoneOffset();
-	      offset = new Date(timestamp + time + offset * MILLISECONDS_IN_MINUTE).getTimezoneOffset();
-	    }
-
-	    return new Date(timestamp + time + offset * MILLISECONDS_IN_MINUTE)
-	  } else {
-	    return new Date(argument)
-	  }
-	}
-
-	function splitDateString (dateString) {
-	  var dateStrings = {};
-	  var array = dateString.split(parseTokenDateTimeDelimeter);
-	  var timeString;
-
-	  if (parseTokenPlainTime.test(array[0])) {
-	    dateStrings.date = null;
-	    timeString = array[0];
-	  } else {
-	    dateStrings.date = array[0];
-	    timeString = array[1];
-	  }
-
-	  if (timeString) {
-	    var token = parseTokenTimezone.exec(timeString);
-	    if (token) {
-	      dateStrings.time = timeString.replace(token[1], '');
-	      dateStrings.timezone = token[1];
-	    } else {
-	      dateStrings.time = timeString;
-	    }
-	  }
-
-	  return dateStrings
-	}
-
-	function parseYear (dateString, additionalDigits) {
-	  var parseTokenYYY = parseTokensYYY[additionalDigits];
-	  var parseTokenYYYYY = parseTokensYYYYY[additionalDigits];
-
-	  var token;
-
-	  // YYYY or ±YYYYY
-	  token = parseTokenYYYY.exec(dateString) || parseTokenYYYYY.exec(dateString);
-	  if (token) {
-	    var yearString = token[1];
-	    return {
-	      year: parseInt(yearString, 10),
-	      restDateString: dateString.slice(yearString.length)
-	    }
-	  }
-
-	  // YY or ±YYY
-	  token = parseTokenYY.exec(dateString) || parseTokenYYY.exec(dateString);
-	  if (token) {
-	    var centuryString = token[1];
-	    return {
-	      year: parseInt(centuryString, 10) * 100,
-	      restDateString: dateString.slice(centuryString.length)
-	    }
-	  }
-
-	  // Invalid ISO-formatted year
-	  return {
-	    year: null
-	  }
-	}
-
-	function parseDate (dateString, year) {
-	  // Invalid ISO-formatted year
-	  if (year === null) {
-	    return null
-	  }
-
-	  var token;
-	  var date;
-	  var month;
-	  var week;
-
-	  // YYYY
-	  if (dateString.length === 0) {
-	    date = new Date(0);
-	    date.setUTCFullYear(year);
-	    return date
-	  }
-
-	  // YYYY-MM
-	  token = parseTokenMM.exec(dateString);
-	  if (token) {
-	    date = new Date(0);
-	    month = parseInt(token[1], 10) - 1;
-	    date.setUTCFullYear(year, month);
-	    return date
-	  }
-
-	  // YYYY-DDD or YYYYDDD
-	  token = parseTokenDDD.exec(dateString);
-	  if (token) {
-	    date = new Date(0);
-	    var dayOfYear = parseInt(token[1], 10);
-	    date.setUTCFullYear(year, 0, dayOfYear);
-	    return date
-	  }
-
-	  // YYYY-MM-DD or YYYYMMDD
-	  token = parseTokenMMDD.exec(dateString);
-	  if (token) {
-	    date = new Date(0);
-	    month = parseInt(token[1], 10) - 1;
-	    var day = parseInt(token[2], 10);
-	    date.setUTCFullYear(year, month, day);
-	    return date
-	  }
-
-	  // YYYY-Www or YYYYWww
-	  token = parseTokenWww.exec(dateString);
-	  if (token) {
-	    week = parseInt(token[1], 10) - 1;
-	    return dayOfISOYear(year, week)
-	  }
-
-	  // YYYY-Www-D or YYYYWwwD
-	  token = parseTokenWwwD.exec(dateString);
-	  if (token) {
-	    week = parseInt(token[1], 10) - 1;
-	    var dayOfWeek = parseInt(token[2], 10) - 1;
-	    return dayOfISOYear(year, week, dayOfWeek)
-	  }
-
-	  // Invalid ISO-formatted date
-	  return null
-	}
-
-	function parseTime (timeString) {
-	  var token;
-	  var hours;
-	  var minutes;
-
-	  // hh
-	  token = parseTokenHH.exec(timeString);
-	  if (token) {
-	    hours = parseFloat(token[1].replace(',', '.'));
-	    return (hours % 24) * MILLISECONDS_IN_HOUR
-	  }
-
-	  // hh:mm or hhmm
-	  token = parseTokenHHMM.exec(timeString);
-	  if (token) {
-	    hours = parseInt(token[1], 10);
-	    minutes = parseFloat(token[2].replace(',', '.'));
-	    return (hours % 24) * MILLISECONDS_IN_HOUR +
-	      minutes * MILLISECONDS_IN_MINUTE
-	  }
-
-	  // hh:mm:ss or hhmmss
-	  token = parseTokenHHMMSS.exec(timeString);
-	  if (token) {
-	    hours = parseInt(token[1], 10);
-	    minutes = parseInt(token[2], 10);
-	    var seconds = parseFloat(token[3].replace(',', '.'));
-	    return (hours % 24) * MILLISECONDS_IN_HOUR +
-	      minutes * MILLISECONDS_IN_MINUTE +
-	      seconds * 1000
-	  }
-
-	  // Invalid ISO-formatted time
-	  return null
-	}
-
-	function parseTimezone (timezoneString) {
-	  var token;
-	  var absoluteOffset;
-
-	  // Z
-	  token = parseTokenTimezoneZ.exec(timezoneString);
-	  if (token) {
-	    return 0
-	  }
-
-	  // ±hh
-	  token = parseTokenTimezoneHH.exec(timezoneString);
-	  if (token) {
-	    absoluteOffset = parseInt(token[2], 10) * 60;
-	    return (token[1] === '+') ? -absoluteOffset : absoluteOffset
-	  }
-
-	  // ±hh:mm or ±hhmm
-	  token = parseTokenTimezoneHHMM.exec(timezoneString);
-	  if (token) {
-	    absoluteOffset = parseInt(token[2], 10) * 60 + parseInt(token[3], 10);
-	    return (token[1] === '+') ? -absoluteOffset : absoluteOffset
-	  }
-
-	  return 0
-	}
-
-	function dayOfISOYear (isoYear, week, day) {
-	  week = week || 0;
-	  day = day || 0;
-	  var date = new Date(0);
-	  date.setUTCFullYear(isoYear, 0, 4);
-	  var fourthOfJanuaryDay = date.getUTCDay() || 7;
-	  var diff = week * 7 + day + 1 - fourthOfJanuaryDay;
-	  date.setUTCDate(date.getUTCDate() + diff);
-	  return date
-	}
-
-	var parse_1 = parse;
-
-	/**
-	 * @category Month Helpers
-	 * @summary Get the number of days in a month of the given date.
-	 *
-	 * @description
-	 * Get the number of days in a month of the given date.
-	 *
-	 * @param {Date|String|Number} date - the given date
-	 * @returns {Number} the number of days in a month
-	 *
-	 * @example
-	 * // How many days are in February 2000?
-	 * var result = getDaysInMonth(new Date(2000, 1))
-	 * //=> 29
-	 */
-	function getDaysInMonth (dirtyDate) {
-	  var date = parse_1(dirtyDate);
-	  var year = date.getFullYear();
-	  var monthIndex = date.getMonth();
-	  var lastDayOfMonth = new Date(0);
-	  lastDayOfMonth.setFullYear(year, monthIndex + 1, 0);
-	  lastDayOfMonth.setHours(0, 0, 0, 0);
-	  return lastDayOfMonth.getDate()
-	}
-
-	var get_days_in_month = getDaysInMonth;
-
-	/**
-	 * @category Month Helpers
-	 * @summary Add the specified number of months to the given date.
-	 *
-	 * @description
-	 * Add the specified number of months to the given date.
-	 *
-	 * @param {Date|String|Number} date - the date to be changed
-	 * @param {Number} amount - the amount of months to be added
-	 * @returns {Date} the new date with the months added
-	 *
-	 * @example
-	 * // Add 5 months to 1 September 2014:
-	 * var result = addMonths(new Date(2014, 8, 1), 5)
-	 * //=> Sun Feb 01 2015 00:00:00
-	 */
-	function addMonths (dirtyDate, dirtyAmount) {
-	  var date = parse_1(dirtyDate);
-	  var amount = Number(dirtyAmount);
-	  var desiredMonth = date.getMonth() + amount;
-	  var dateWithDesiredMonth = new Date(0);
-	  dateWithDesiredMonth.setFullYear(date.getFullYear(), desiredMonth, 1);
-	  dateWithDesiredMonth.setHours(0, 0, 0, 0);
-	  var daysInMonth = get_days_in_month(dateWithDesiredMonth);
-	  // Set the last day of the new month
-	  // if the original date was the last day of the longer month
-	  date.setMonth(desiredMonth, Math.min(daysInMonth, date.getDate()));
-	  return date
-	}
-
-	var add_months = addMonths;
-
-	/**
-	 * @category Month Helpers
-	 * @summary Subtract the specified number of months from the given date.
-	 *
-	 * @description
-	 * Subtract the specified number of months from the given date.
-	 *
-	 * @param {Date|String|Number} date - the date to be changed
-	 * @param {Number} amount - the amount of months to be subtracted
-	 * @returns {Date} the new date with the months subtracted
-	 *
-	 * @example
-	 * // Subtract 5 months from 1 February 2015:
-	 * var result = subMonths(new Date(2015, 1, 1), 5)
-	 * //=> Mon Sep 01 2014 00:00:00
-	 */
-	function subMonths (dirtyDate, dirtyAmount) {
-	  var amount = Number(dirtyAmount);
-	  return add_months(dirtyDate, -amount)
-	}
-
-	var sub_months = subMonths;
-
-	const { getSheet } = browserBuild;
 
 	const pad2 = number => number < 10 ? `0${ number }` : number.toString();
 	const formatNumberAsDate = timestamp => {
@@ -3550,26 +2791,26 @@
 	};
 
 	async function main() {
-		setUpWeightGraph(document);
+		// setUpWeightGraph(document)
 
 		setUpBigMacGraph(document);
 	}
 
 	main();
-
+	/*
 	async function setUpWeightGraph(doc) {
-		const points = await getWeightDataPoints();
+		const points = await getWeightDataPoints()
 
-		const weightRadioButtons = Array.from(doc.querySelectorAll(`input[name=weight]`));
+		const weightRadioButtons = Array.from(doc.querySelectorAll(`input[name=weight]`))
 
 		const getCurrentlyCheckedDateRange = () => weightRadioButtons
 			.filter(input => input.checked)
-			.reduce((_, input) => input.value, `year`);
+			.reduce((_, input) => input.value, `year`)
 
 		const getCurrentDataset = () => ({
 			color: `#139090`,
 			points: points[getCurrentlyCheckedDateRange()],
-		});
+		})
 
 		const graph = new ScatterGraph({
 			target: doc.getElementById(`graph-target`),
@@ -3581,21 +2822,21 @@
 				formatY: y => `${ y.toFixed(1) }lb`,
 				color: `var(--weightColor)`,
 			},
-		});
+		})
 
-		doc.body.dataset.weightLoaded = true;
+		doc.body.dataset.weightLoaded = true
 
 		weightRadioButtons.forEach(element => {
 			element.addEventListener(`change`, () => {
 				if (element.checked) {
 					graph.set({
 						datasets: [ getCurrentDataset() ],
-					});
+					})
 				}
-			});
-		});
+			})
+		})
 	}
-
+	*/
 	function setUpBigMacGraph(doc) {
 		const colors = {
 			CAD: `var(--cadColor)`,
@@ -3610,9 +2851,9 @@
 					({ date, usdCost }) => ({
 						x: new Date(date).valueOf(),
 						y: usdCost,
-					})
+					}),
 				),
-			})
+			}),
 		);
 
 		new ScatterGraph({
@@ -3625,44 +2866,44 @@
 			},
 		});
 	}
-
+	/*
 	async function getWeightDataPoints() {
-		const documentId = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`;
-		const sheet1Id = `ouieeg5`;
+		const documentId = `1ZFNKaLeZBkx3RmrKiv_qihhVphaNnnjEehhuRfir08U`
+		const sheet1Id = `ouieeg5`
 
-		const digits = /(\d+)/;
-		const stupidDate = regexFun.combine(/^/, digits, `/`, digits, `/`, digits, ` `, digits, `:`, digits, `:`, digits, /$/);
-		const mostlyIsoDate = regexFun.combine(/^/, digits, `-`, digits, `-`, digits, ` `, digits, `:`, digits, /$/);
+		const digits = /(\d+)/
+		const stupidDate = r.combine(/^/, digits, `/`, digits, `/`, digits, ` `, digits, `:`, digits, `:`, digits, /$/)
+		const mostlyIsoDate = r.combine(/^/, digits, `-`, digits, `-`, digits, ` `, digits, `:`, digits, /$/)
 		const toDate = (...stringParams) => {
-			const [ year, month, ...rest ] = stringParams.map(str => parseInt(str, 10));
+			const [ year, month, ...rest ] = stringParams.map(str => parseInt(str, 10))
 
 			return new Date(year, month - 1, ...rest).valueOf()
-		};
+		}
 		const parseStupidDateOrIso = dateString => {
-			const match = dateString.match(stupidDate);
+			const match = dateString.match(stupidDate)
 			if (match) {
-				const [ , month, day, year, hour, minute, second ] = match;
+				const [ , month, day, year, hour, minute, second ] = match
 				return toDate(year, month, day, hour, minute, second)
 			} else {
-				const [ , year, month, day, hour, minute ] = dateString.match(mostlyIsoDate);
+				const [ , year, month, day, hour, minute ] = dateString.match(mostlyIsoDate)
 				return toDate(year, month, day, hour, minute)
 			}
-		};
+		}
 
 
 
-		const sheet = await getSheet(documentId, sheet1Id);
+		const sheet = await getSheet(documentId, sheet1Id)
 
 		const allPoints = sheet.rows.map(({ timestamp, weight }) => ({
 			x: parseStupidDateOrIso(timestamp),
 			y: parseFloat(weight),
-		}));
+		}))
 
-		const now = new Date();
-		const yearAgo = sub_months(now, 12).valueOf();
-		const threeMonthsAgo = sub_months(now, 3).valueOf();
+		const now = new Date()
+		const yearAgo = subtractMonths(now, 12).valueOf()
+		const threeMonthsAgo = subtractMonths(now, 3).valueOf()
 
-		const year = allPoints.filter(({ x: timestamp }) => timestamp > yearAgo);
+		const year = allPoints.filter(({ x: timestamp }) => timestamp > yearAgo)
 
 		return {
 			allTime: allPoints,
@@ -3670,6 +2911,7 @@
 			threeMonths: year.filter(({ x: timestamp }) => timestamp > threeMonthsAgo),
 		}
 	}
+	*/
 
 }());
 //# sourceMappingURL=bundle.js.map
