@@ -6,7 +6,7 @@ const isoZones = new Set([ `CAN`, `GBR`, `USA` ])
 const relative = path => require(`path`).join(__dirname, path)
 
 async function main() {
-	const csv = require(`fs`).readFileSync(relative(`./downloaded-2020-07-09.csv`), { encoding: `utf8` })
+	const csv = require(`fs`).readFileSync(relative(`./downloaded-2021-12-23.csv`), { encoding: `utf8` })
 
 	const data = await neatCsv(csv, {
 		mapHeaders: toCamelCase,
@@ -21,13 +21,13 @@ async function main() {
 	// )
 
 	const desiredData = data.filter(
-		({ isoA3 }) => isoZones.has(isoA3)
+		({ isoA3 }) => isoZones.has(isoA3),
 	).map(
 		({ currencyCode, localPrice, dollarEx, date }) => ({
 			currencyCode,
 			date,
 			usdCost: parseFloat(localPrice) / parseFloat(dollarEx),
-		})
+		}),
 	)
 
 	const points = {}
