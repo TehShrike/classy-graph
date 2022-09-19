@@ -2487,19 +2487,39 @@
 		},
 		{
 			date: "2018-07-01",
-			usdCost: 4.231534999999998
+			usdCost: 4.231534998301038
 		},
 		{
 			date: "2019-01-01",
-			usdCost: 4.072992000000001
+			usdCost: 4.072992000260672
 		},
 		{
 			date: "2019-07-09",
-			usdCost: 4.1013139999999995
+			usdCost: 4.101313999298675
 		},
 		{
 			date: "2020-01-14",
-			usdCost: 4.410220500000001
+			usdCost: 4.410220497364894
+		},
+		{
+			date: "2020-07-01",
+			usdCost: 4.277332498492241
+		},
+		{
+			date: "2021-01-01",
+			usdCost: 4.437716500541401
+		},
+		{
+			date: "2021-07-01",
+			usdCost: 4.750413499334705
+		},
+		{
+			date: "2022-01-01",
+			usdCost: 4.816523499508233
+		},
+		{
+			date: "2022-07-01",
+			usdCost: 4.440005775617279
 		}
 	];
 	var CAD = [
@@ -2630,136 +2650,176 @@
 		{
 			date: "2020-01-14",
 			usdCost: 5.181585090505529
+		},
+		{
+			date: "2020-07-01",
+			usdCost: 5.076741440377804
+		},
+		{
+			date: "2021-01-01",
+			usdCost: 5.287823166445364
+		},
+		{
+			date: "2021-07-01",
+			usdCost: 5.3135546660387725
+		},
+		{
+			date: "2022-01-01",
+			usdCost: 5.323164019499921
+		},
+		{
+			date: "2022-07-01",
+			usdCost: 5.2515223209091255
 		}
 	];
 	var USD = [
 		{
 			date: "2000-04-01",
-			usdCost: 2.51
+			usdCost: 2.24
 		},
 		{
 			date: "2001-04-01",
-			usdCost: 2.54
+			usdCost: 2.24
 		},
 		{
 			date: "2002-04-01",
-			usdCost: 2.49
+			usdCost: 2.35
 		},
 		{
 			date: "2003-04-01",
-			usdCost: 2.71
+			usdCost: 2.46
 		},
 		{
 			date: "2004-05-01",
-			usdCost: 2.9
+			usdCost: 2.47
 		},
 		{
 			date: "2005-06-01",
-			usdCost: 3.06
+			usdCost: 2.58
 		},
 		{
 			date: "2006-01-01",
-			usdCost: 3.15
+			usdCost: 2.67
 		},
 		{
 			date: "2006-05-01",
-			usdCost: 3.1
+			usdCost: 2.78
 		},
 		{
 			date: "2007-01-01",
-			usdCost: 3.22
+			usdCost: 2.89
 		},
 		{
 			date: "2007-06-01",
-			usdCost: 3.41
+			usdCost: 3
 		},
 		{
 			date: "2008-06-01",
-			usdCost: 3.57
+			usdCost: 3.21
 		},
 		{
 			date: "2009-07-01",
-			usdCost: 3.57
+			usdCost: 3.43
 		},
 		{
 			date: "2010-01-01",
-			usdCost: 3.58
+			usdCost: 3.43
 		},
 		{
 			date: "2010-07-01",
-			usdCost: 3.733333333
+			usdCost: 3.53
 		},
 		{
 			date: "2011-07-01",
-			usdCost: 4.065
+			usdCost: 3.64
 		},
 		{
 			date: "2012-01-01",
-			usdCost: 4.19722
+			usdCost: 3.81
 		},
 		{
 			date: "2012-07-01",
-			usdCost: 4.3275
+			usdCost: 3.96
 		},
 		{
 			date: "2013-01-01",
-			usdCost: 4.367395833
+			usdCost: 4.03
 		},
 		{
 			date: "2013-07-01",
-			usdCost: 4.556666667
+			usdCost: 4.18
 		},
 		{
 			date: "2014-01-01",
-			usdCost: 4.624166667
+			usdCost: 4.24
 		},
 		{
 			date: "2014-07-01",
-			usdCost: 4.795
+			usdCost: 4.29
 		},
 		{
 			date: "2015-01-01",
-			usdCost: 4.79
+			usdCost: 4.29
 		},
 		{
 			date: "2015-07-01",
-			usdCost: 4.79
+			usdCost: 4.29
 		},
 		{
 			date: "2016-01-01",
-			usdCost: 4.93
+			usdCost: 4.29
 		},
 		{
 			date: "2016-07-01",
-			usdCost: 5.04
+			usdCost: 4.5
 		},
 		{
 			date: "2017-01-01",
-			usdCost: 5.06
+			usdCost: 4.5
 		},
 		{
 			date: "2017-07-01",
-			usdCost: 5.3
+			usdCost: 4.5
 		},
 		{
 			date: "2018-01-01",
-			usdCost: 5.28
+			usdCost: 4.61
 		},
 		{
 			date: "2018-07-01",
-			usdCost: 5.51
+			usdCost: 4.62
 		},
 		{
 			date: "2019-01-01",
-			usdCost: 5.58
+			usdCost: 4.71
 		},
 		{
 			date: "2019-07-09",
-			usdCost: 5.74
+			usdCost: 4.71
 		},
 		{
 			date: "2020-01-14",
-			usdCost: 5.67
+			usdCost: 4.82
+		},
+		{
+			date: "2020-07-01",
+			usdCost: 4.82
+		},
+		{
+			date: "2021-01-01",
+			usdCost: 4.89
+		},
+		{
+			date: "2021-07-01",
+			usdCost: 4.93
+		},
+		{
+			date: "2022-01-01",
+			usdCost: 5.04
+		},
+		{
+			date: "2022-07-01",
+			usdCost: 5.77
 		}
 	];
 	var bigMacData = {
